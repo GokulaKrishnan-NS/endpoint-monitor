@@ -1,1 +1,122 @@
 2026-08-01 22:03:32,394 | INFO | Endpoint Security Monitor started.
+2026-09-03 14:39:31,691 | INFO | Endpoint Security Monitor started.
+2026-09-03 14:47:11,844 | INFO | Endpoint Security Monitor started.
+2026-09-03 14:47:13,125 | INFO | Process monitor detected 276 running processes.
+2026-09-03 14:59:22,172 | INFO | Endpoint Security Monitor started.
+2026-09-03 14:59:23,232 | INFO | Process monitor detected 273 running processes.
+2026-09-03 14:59:23,233 | WARNING | Suspicious command detected: nc | PID: 1788 | Process: Code.exe | Risk: HIGH
+2026-09-03 14:59:23,234 | WARNING | Suspicious command detected: python | PID: 2100 | Process: pet.exe | Risk: LOW
+2026-09-03 14:59:23,234 | WARNING | Suspicious command detected: sh | PID: 2864 | Process: brave.exe | Risk: LOW
+2026-09-03 14:59:23,245 | WARNING | Suspicious command detected: nc | PID: 3668 | Process: powershell.exe | Risk: HIGH
+2026-09-03 14:59:23,246 | WARNING | Suspicious command detected: sh | PID: 5224 | Process: msedgewebview2.exe | Risk: LOW
+2026-09-03 14:59:23,246 | WARNING | Suspicious command detected: sh | PID: 6852 | Process: brave.exe | Risk: LOW
+2026-09-03 14:59:23,246 | WARNING | Suspicious command detected: nc | PID: 7656 | Process: chrome.exe | Risk: HIGH
+2026-09-03 14:59:23,246 | WARNING | Suspicious command detected: nc | PID: 8420 | Process: msedgewebview2.exe | Risk: HIGH
+2026-09-03 14:59:23,247 | WARNING | Suspicious command detected: nc | PID: 8648 | Process: msedgewebview2.exe | Risk: HIGH
+2026-09-03 14:59:23,247 | WARNING | Suspicious command detected: nc | PID: 10972 | Process: msedgewebview2.exe | Risk: HIGH
+2026-09-03 14:59:23,247 | WARNING | Suspicious command detected: nc | PID: 11352 | Process: msedgewebview2.exe | Risk: HIGH
+2026-09-03 14:59:23,248 | WARNING | Suspicious command detected: nc | PID: 11504 | Process: Code.exe | Risk: HIGH
+2026-09-03 14:59:23,248 | WARNING | Suspicious command detected: sh | PID: 11676 | Process: msedgewebview2.exe | Risk: LOW
+2026-09-03 14:59:23,248 | WARNING | Suspicious command detected: nc | PID: 12636 | Process: chrome.exe | Risk: HIGH
+2026-09-03 14:59:23,248 | WARNING | Suspicious command detected: nc | PID: 12684 | Process: SnippingTool.exe | Risk: HIGH
+2026-09-03 14:59:23,248 | WARNING | Suspicious command detected: sh | PID: 12880 | Process: chrome.exe | Risk: LOW
+2026-09-03 14:59:23,248 | WARNING | Suspicious command detected: sh | PID: 12940 | Process: msedgewebview2.exe | Risk: LOW
+2026-09-03 14:59:23,249 | WARNING | Suspicious command detected: nc | PID: 13160 | Process: Code.exe | Risk: HIGH
+2026-09-03 14:59:23,249 | WARNING | Suspicious command detected: nc | PID: 14400 | Process: msedgewebview2.exe | Risk: HIGH
+2026-09-03 14:59:23,249 | WARNING | Suspicious command detected: nc | PID: 14556 | Process: OpenConsole.exe | Risk: HIGH
+2026-09-03 14:59:23,249 | WARNING | Suspicious command detected: nc | PID: 14632 | Process: brave.exe | Risk: HIGH
+2026-09-03 14:59:23,249 | WARNING | Suspicious command detected: sh | PID: 14892 | Process: brave.exe | Risk: LOW
+2026-09-03 14:59:23,249 | WARNING | Suspicious command detected: nc | PID: 15124 | Process: Code.exe | Risk: HIGH
+2026-09-03 14:59:23,250 | WARNING | Suspicious command detected: nc | PID: 15808 | Process: powershell.exe | Risk: HIGH
+2026-09-03 14:59:23,250 | WARNING | Suspicious command detected: nc | PID: 16280 | Process: msedgewebview2.exe | Risk: HIGH
+2026-09-03 14:59:23,250 | WARNING | Suspicious command detected: sh | PID: 16624 | Process: BraveCrashHandler.exe | Risk: LOW
+2026-09-03 14:59:23,250 | WARNING | Suspicious command detected: sh | PID: 17412 | Process: BraveCrashHandler64.exe | Risk: LOW
+2026-09-03 14:59:23,250 | WARNING | Suspicious command detected: nc | PID: 17808 | Process: brave.exe | Risk: HIGH
+2026-09-03 14:59:23,251 | WARNING | Suspicious command detected: python | PID: 17976 | Process: python.exe | Risk: LOW
+2026-09-03 14:59:23,251 | WARNING | Suspicious command detected: sh | PID: 20240 | Process: brave.exe | Risk: LOW
+2026-09-03 14:59:23,251 | WARNING | Suspicious command detected: nc | PID: 20360 | Process: chrome.exe | Risk: HIGH
+2026-09-03 14:59:23,251 | WARNING | Suspicious command detected: nc | PID: 21172 | Process: WidgetBoard.exe | Risk: HIGH
+2026-09-03 14:59:23,251 | WARNING | Suspicious command detected: sh | PID: 21636 | Process: msedgewebview2.exe | Risk: LOW
+2026-09-03 14:59:23,252 | WARNING | Suspicious command detected: nc | PID: 21872 | Process: Code.exe | Risk: HIGH
+2026-09-03 14:59:23,252 | WARNING | Suspicious command detected: nc | PID: 22172 | Process: Code.exe | Risk: HIGH
+2026-09-03 14:59:23,252 | WARNING | Suspicious command detected: nc | PID: 22756 | Process: MicrosoftStartFeedProvider.exe | Risk: HIGH
+2026-09-03 14:59:23,252 | WARNING | Suspicious command detected: nc | PID: 22988 | Process: OpenConsole.exe | Risk: HIGH
+2026-09-03 14:59:23,252 | WARNING | Suspicious command detected: sh | PID: 23244 | Process: msedgewebview2.exe | Risk: LOW
+2026-09-03 14:59:23,253 | WARNING | Suspicious command detected: nc | PID: 23384 | Process: brave.exe | Risk: HIGH
+2026-09-03 14:59:23,253 | WARNING | Suspicious command detected: sh | PID: 23684 | Process: ShellHost.exe | Risk: LOW
+2026-09-03 14:59:23,253 | WARNING | Suspicious command detected: nc | PID: 24796 | Process: msedgewebview2.exe | Risk: HIGH
+2026-09-03 14:59:23,253 | WARNING | Suspicious command detected: sh | PID: 25128 | Process: brave.exe | Risk: LOW
+2026-09-03 14:59:23,254 | WARNING | Suspicious command detected: nc | PID: 25676 | Process: StartMenuExperienceHost.exe | Risk: HIGH
+2026-09-03 14:59:23,254 | WARNING | Suspicious command detected: nc | PID: 25896 | Process: Code.exe | Risk: HIGH
+2026-09-03 14:59:23,254 | WARNING | Suspicious command detected: sh | PID: 25988 | Process: msedgewebview2.exe | Risk: LOW
+2026-09-03 14:59:23,254 | WARNING | Suspicious command detected: nc | PID: 26236 | Process: msedgewebview2.exe | Risk: HIGH
+2026-09-03 14:59:23,255 | WARNING | Suspicious command detected: sh | PID: 26696 | Process: msedgewebview2.exe | Risk: LOW
+2026-09-03 14:59:23,255 | WARNING | Suspicious command detected: sh | PID: 26716 | Process: Code.exe | Risk: LOW
+2026-09-03 14:59:23,255 | WARNING | Suspicious command detected: nc | PID: 26724 | Process: Code.exe | Risk: HIGH
+2026-09-03 14:59:23,255 | WARNING | Suspicious command detected: nc | PID: 27148 | Process: brave.exe | Risk: HIGH
+2026-09-03 14:59:23,255 | WARNING | Suspicious command detected: nc | PID: 27380 | Process: Code.exe | Risk: HIGH
+2026-09-03 14:59:23,256 | WARNING | Suspicious command detected: nc | PID: 27984 | Process: msedgewebview2.exe | Risk: HIGH
+2026-09-03 14:59:23,256 | WARNING | Suspicious command detected: sh | PID: 28492 | Process: chrome.exe | Risk: LOW
+2026-09-03 14:59:23,256 | WARNING | Suspicious command detected: nc | PID: 29092 | Process: chrome.exe | Risk: HIGH
+2026-09-03 14:59:23,256 | WARNING | Suspicious command detected: nc | PID: 29180 | Process: SnippingTool.exe | Risk: HIGH
+2026-09-03 14:59:23,257 | WARNING | Suspicious command detected: python | PID: 29188 | Process: python.exe | Risk: LOW
+2026-09-03 14:59:23,257 | WARNING | Suspicious command detected: sh | PID: 29508 | Process: chrome.exe | Risk: LOW
+2026-09-03 15:14:32,125 | INFO | Endpoint Security Monitor started.
+2026-09-03 15:14:33,607 | INFO | Process monitor detected 280 running processes.
+2026-09-03 15:14:33,607 | WARNING | Suspicious command detected: nc | PID: 1788 | Process: Code.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,608 | WARNING | Suspicious command detected: python | PID: 2100 | Process: pet.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,608 | WARNING | Suspicious command detected: sh | PID: 2864 | Process: brave.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,608 | WARNING | Suspicious command detected: nc | PID: 3668 | Process: powershell.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,608 | WARNING | Suspicious command detected: sh | PID: 5224 | Process: msedgewebview2.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,608 | WARNING | Suspicious command detected: sh | PID: 6852 | Process: brave.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,608 | WARNING | Suspicious command detected: nc | PID: 7656 | Process: chrome.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,609 | WARNING | Suspicious command detected: nc | PID: 8420 | Process: msedgewebview2.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,609 | WARNING | Suspicious command detected: nc | PID: 8648 | Process: msedgewebview2.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,609 | WARNING | Suspicious command detected: nc | PID: 10972 | Process: msedgewebview2.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,609 | WARNING | Suspicious command detected: nc | PID: 11352 | Process: msedgewebview2.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,609 | WARNING | Suspicious command detected: nc | PID: 11504 | Process: Code.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,609 | WARNING | Suspicious command detected: sh | PID: 11676 | Process: msedgewebview2.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,609 | WARNING | Suspicious command detected: nc | PID: 12636 | Process: chrome.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,610 | WARNING | Suspicious command detected: nc | PID: 12684 | Process: SnippingTool.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,610 | WARNING | Suspicious command detected: sh | PID: 12880 | Process: chrome.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,610 | WARNING | Suspicious command detected: sh | PID: 12940 | Process: msedgewebview2.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,610 | WARNING | Suspicious command detected: nc | PID: 13160 | Process: Code.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,610 | WARNING | Suspicious command detected: nc | PID: 14400 | Process: msedgewebview2.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,610 | WARNING | Suspicious command detected: nc | PID: 14556 | Process: OpenConsole.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,610 | WARNING | Suspicious command detected: nc | PID: 14632 | Process: brave.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,611 | WARNING | Suspicious command detected: sh | PID: 14892 | Process: brave.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,611 | WARNING | Suspicious command detected: nc | PID: 15124 | Process: Code.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,611 | WARNING | Suspicious command detected: nc | PID: 15808 | Process: powershell.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,611 | WARNING | Suspicious command detected: nc | PID: 16280 | Process: msedgewebview2.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,611 | WARNING | Suspicious command detected: sh | PID: 16624 | Process: BraveCrashHandler.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,611 | WARNING | Suspicious command detected: sh | PID: 17412 | Process: BraveCrashHandler64.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,612 | WARNING | Suspicious command detected: nc | PID: 17808 | Process: brave.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,612 | WARNING | Suspicious command detected: python | PID: 20068 | Process: python.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,612 | WARNING | Suspicious command detected: sh | PID: 20240 | Process: brave.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,612 | WARNING | Suspicious command detected: nc | PID: 20360 | Process: chrome.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,612 | WARNING | Suspicious command detected: nc | PID: 21172 | Process: WidgetBoard.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,612 | WARNING | Suspicious command detected: sh | PID: 21636 | Process: msedgewebview2.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,613 | WARNING | Suspicious command detected: nc | PID: 21872 | Process: Code.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,613 | WARNING | Suspicious command detected: nc | PID: 22172 | Process: Code.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,613 | WARNING | Suspicious command detected: nc | PID: 22756 | Process: MicrosoftStartFeedProvider.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,614 | WARNING | Suspicious command detected: nc | PID: 22988 | Process: OpenConsole.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,614 | WARNING | Suspicious command detected: sh | PID: 23244 | Process: msedgewebview2.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,614 | WARNING | Suspicious command detected: nc | PID: 23384 | Process: brave.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,615 | WARNING | Suspicious command detected: sh | PID: 24116 | Process: ShellHost.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,616 | WARNING | Suspicious command detected: nc | PID: 24796 | Process: msedgewebview2.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,616 | WARNING | Suspicious command detected: sh | PID: 25128 | Process: brave.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,617 | WARNING | Suspicious command detected: nc | PID: 25676 | Process: StartMenuExperienceHost.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,617 | WARNING | Suspicious command detected: python | PID: 25684 | Process: python.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,618 | WARNING | Suspicious command detected: nc | PID: 25896 | Process: Code.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,618 | WARNING | Suspicious command detected: sh | PID: 25988 | Process: msedgewebview2.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,619 | WARNING | Suspicious command detected: nc | PID: 26236 | Process: msedgewebview2.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,619 | WARNING | Suspicious command detected: sh | PID: 26696 | Process: msedgewebview2.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,619 | WARNING | Suspicious command detected: sh | PID: 26716 | Process: Code.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,619 | WARNING | Suspicious command detected: nc | PID: 26724 | Process: Code.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,620 | WARNING | Suspicious command detected: nc | PID: 27148 | Process: brave.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,620 | WARNING | Suspicious command detected: nc | PID: 27380 | Process: Code.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,621 | WARNING | Suspicious command detected: nc | PID: 27984 | Process: msedgewebview2.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,621 | WARNING | Suspicious command detected: sh | PID: 28492 | Process: chrome.exe | Risk: LOW | Score: 2
+2026-09-03 15:14:33,622 | WARNING | Suspicious command detected: nc | PID: 29092 | Process: chrome.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,622 | WARNING | Suspicious command detected: nc | PID: 29180 | Process: SnippingTool.exe | Risk: HIGH | Score: 5
+2026-09-03 15:14:33,623 | WARNING | Suspicious command detected: sh | PID: 29508 | Process: chrome.exe | Risk: LOW | Score: 2
