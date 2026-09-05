@@ -1,7 +1,7 @@
 from src.utils.logger import setup_logger
 from src.alerts.alert_manager import show_alert
 from src.monitors.process_monitor import get_running_processes
-from src.detectors.command_detector import detect_suspicious_command
+from src.detectors.command_detector import detect_command_indicators
 from src.detectors.risk_detector import calculate_risk
 
 
@@ -20,31 +20,52 @@ def main():
         f"Process monitor detected {len(processes)} running processes."
     )
 
-    for process in processes:
+    for pid, process in processes.items():
+
         command_line = process.get("cmdline")
 
-        suspicious_command = detect_suspicious_command(command_line)
+        # Analyze the command line for suspicious indicators
+        indicators = detect_command_indicators(command_line)
 
-        if suspicious_command:
-            risk_result = calculate_risk(
-                suspicious_command,
-                process
-            )
+        # Calculate risk using indicators and process context
+        risk_result = calculate_risk(
+            indicators,
+            process
+        )
 
-            risk = risk_result["level"]
-            score = risk_result["score"]
+        score = risk_result["score"]
+        level = risk_result["level"]
+        reasons = risk_result["reasons"]
+
+        # Only report processes that contain suspicious indicators
+        if indicators:
 
             message = (
-                f"Suspicious command detected: "
-                f"{suspicious_command} | "
+                f"Suspicious process detected | "
                 f"PID: {process.get('pid')} | "
                 f"Process: {process.get('name')} | "
-                f"Risk: {risk} | "
+                f"Parent: {process.get('parent_name')} | "
+                f"Risk: {level} | "
                 f"Score: {score}"
             )
 
+            print("\n" + "=" * 60)
             print(message)
+
+            print("Indicators:")
+            for indicator in indicators:
+                print(f"  - {indicator}")
+
+            print("Reasons:")
+            for reason in reasons:
+                print(f"  - {reason}")
+
+            print("=" * 60)
+
             logger.warning(message)
+
+            for reason in reasons:
+                logger.warning(f"Reason: {reason}")
 
 
 if __name__ == "__main__":

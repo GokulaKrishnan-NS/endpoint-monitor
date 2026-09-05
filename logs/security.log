@@ -120,3 +120,19 @@
 2026-09-03 15:14:33,622 | WARNING | Suspicious command detected: nc | PID: 29092 | Process: chrome.exe | Risk: HIGH | Score: 5
 2026-09-03 15:14:33,622 | WARNING | Suspicious command detected: nc | PID: 29180 | Process: SnippingTool.exe | Risk: HIGH | Score: 5
 2026-09-03 15:14:33,623 | WARNING | Suspicious command detected: sh | PID: 29508 | Process: chrome.exe | Risk: LOW | Score: 2
+2026-09-05 18:20:54,797 | INFO | Endpoint Security Monitor started.
+2026-09-05 18:20:59,983 | INFO | Process monitor detected 278 running processes.
+2026-09-05 18:24:29,290 | INFO | Endpoint Security Monitor started.
+2026-09-05 18:24:35,669 | INFO | Process monitor detected 284 running processes.
+2026-09-05 18:24:35,673 | WARNING | Suspicious process detected | PID: 31096 | Process: cmd.exe | Parent: powershell.exe | Risk: LOW | Score: 2
+2026-09-05 18:24:35,673 | WARNING | Reason: Command Chaining (+2)
+2026-09-05 18:25:28,226 | INFO | Endpoint Security Monitor started.
+2026-09-05 18:25:33,691 | INFO | Process monitor detected 283 running processes.
+2026-09-05 18:25:33,693 | WARNING | Suspicious process detected | PID: 16288 | Process: powershell.exe | Parent: powershell.exe | Risk: MEDIUM | Score: 3
+2026-09-05 18:25:33,693 | WARNING | Reason: Hidden Execution (+3)
+2026-09-05 18:27:43,609 | INFO | Endpoint Security Monitor started.
+2026-09-05 18:27:48,757 | INFO | Process monitor detected 284 running processes.
+2026-09-05 18:29:32,652 | INFO | Endpoint Security Monitor started.
+2026-09-05 18:29:37,662 | INFO | Process monitor detected 284 running processes.
+2026-09-05 18:29:37,664 | WARNING | Suspicious process detected | PID: 12516 | Process: powershell.exe | Parent: powershell.exe | Risk: MEDIUM | Score: 4
+2026-09-05 18:29:37,664 | WARNING | Reason: Encoded Command (+4)
