@@ -1,4 +1,9 @@
+import os
 import sys
+
+# Ensure root project directory is in sys.path when script is executed directly
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import time
 
 from src.utils.logger import setup_logger
@@ -7,6 +12,88 @@ from src.monitors.process_monitor import get_running_processes, get_new_processe
 from src.monitors.resource_monitor import ResourceMonitor
 from src.detectors.command_detector import detect_command_indicators
 from src.detectors.risk_detector import calculate_risk
+from src.models.event import Event
+from src.baseline.baseline_engine import BaselineEngine
+
+
+def process_event_from_dict(process_info):
+    """
+    Construct a standardized Event object from raw process dictionary,
+    run command indicator analysis and risk scoring, and update event fields.
+    """
+    event = Event.from_process_info(process_info)
+
+    # Analyze command line for indicators
+    event.indicators = detect_command_indicators(event.command_line)
+
+    # Calculate risk using indicators and process context
+    risk_result = calculate_risk(event.indicators, process_info)
+
+    event.risk_score = risk_result["score"]
+    event.risk_level = risk_result["level"]
+    event.risk_reasons = risk_result["reasons"]
+    event.severity = risk_result["level"]
+
+    return event
+
+
+def report_suspicious_event(event, logger):
+    """
+    Print and log a standardized suspicious process event.
+    """
+    message = (
+        f"Suspicious process detected | "
+        f"PID: {event.pid} | "
+        f"Process: {event.process_name} | "
+        f"Parent: {event.parent_process_name} | "
+        f"Risk: {event.risk_level} | "
+        f"Score: {event.risk_score}"
+    )
+
+    print("\n" + "=" * 60)
+    print(message)
+
+    print("Indicators:")
+    for indicator in event.indicators:
+        print(f"  - {indicator}")
+
+    print("Reasons:")
+    for reason in event.risk_reasons:
+        print(f"  - {reason}")
+
+    print("=" * 60)
+
+    logger.warning(message)
+
+    for reason in event.risk_reasons:
+        logger.warning(f"Reason: {reason}")
+
+
+def report_behavioral_anomaly(event, anomaly_result, logger):
+    """
+    Print and log a behavioral baseline anomaly event.
+    """
+    message = (
+        f"Behavioral Anomaly detected | "
+        f"PID: {event.pid} | "
+        f"Process: {event.process_name} | "
+        f"Parent: {event.parent_process_name} | "
+        f"Anomaly Level: {anomaly_result['anomaly_level']} | "
+        f"Anomaly Score: {anomaly_result['anomaly_score']}"
+    )
+
+    print("\n" + "!" * 60)
+    print(message)
+
+    print("Behavioral Deviation Reasons:")
+    for reason in anomaly_result["reasons"]:
+        print(f"  - {reason}")
+
+    print("!" * 60)
+
+    logger.warning(message)
+    for reason in anomaly_result["reasons"]:
+        logger.warning(f"Baseline Anomaly Reason: {reason}")
 
 
 def main():
@@ -16,6 +103,9 @@ def main():
     logger.info("Endpoint Security Monitor started.")
 
     show_alert("System initialized successfully.")
+
+    # Initialize Behavioral Baseline Engine
+    baseline_engine = BaselineEngine()
 
     # Resource Monitoring initial snapshot check
     resource_monitor = ResourceMonitor(logger=logger)
@@ -41,51 +131,24 @@ def main():
     )
 
     for pid, process in processes.items():
+        event = process_event_from_dict(process)
 
-        command_line = process.get("cmdline")
+        # Behavioral baseline evaluation
+        anomaly_result = baseline_engine.analyze_event(event)
+        event.metadata["baseline_anomaly"] = anomaly_result
 
-        # Analyze the command line for suspicious indicators
-        indicators = detect_command_indicators(command_line)
+        # Collect clean events into baseline profiles
+        baseline_engine.collect_event(event)
 
-        # Calculate risk using indicators and process context
-        risk_result = calculate_risk(
-            indicators,
-            process
-        )
+        # Report static rule indicators if present
+        if event.indicators:
+            report_suspicious_event(event, logger)
 
-        score = risk_result["score"]
-        level = risk_result["level"]
-        reasons = risk_result["reasons"]
+        # Report behavioral anomalies if detected
+        if anomaly_result.get("is_anomaly"):
+            report_behavioral_anomaly(event, anomaly_result, logger)
 
-        # Only report processes that contain suspicious indicators
-        if indicators:
-
-            message = (
-                f"Suspicious process detected | "
-                f"PID: {process.get('pid')} | "
-                f"Process: {process.get('name')} | "
-                f"Parent: {process.get('parent_name')} | "
-                f"Risk: {level} | "
-                f"Score: {score}"
-            )
-
-            print("\n" + "=" * 60)
-            print(message)
-
-            print("Indicators:")
-            for indicator in indicators:
-                print(f"  - {indicator}")
-
-            print("Reasons:")
-            for reason in reasons:
-                print(f"  - {reason}")
-
-            print("=" * 60)
-
-            logger.warning(message)
-
-            for reason in reasons:
-                logger.warning(f"Reason: {reason}")
+    baseline_engine.save_baseline()
 
     # Optional continuous monitoring mode
     if "--continuous" in sys.argv or "-c" in sys.argv:
@@ -108,43 +171,21 @@ def main():
                 new_processes = get_new_processes(previous_processes, current_processes)
 
                 for process in new_processes:
-                    command_line = process.get("cmdline")
-                    indicators = detect_command_indicators(command_line)
-                    risk_result = calculate_risk(indicators, process)
+                    event = process_event_from_dict(process)
 
-                    score = risk_result["score"]
-                    level = risk_result["level"]
-                    reasons = risk_result["reasons"]
+                    anomaly_result = baseline_engine.analyze_event(event)
+                    event.metadata["baseline_anomaly"] = anomaly_result
 
-                    if indicators:
-                        message = (
-                            f"Suspicious process detected | "
-                            f"PID: {process.get('pid')} | "
-                            f"Process: {process.get('name')} | "
-                            f"Parent: {process.get('parent_name')} | "
-                            f"Risk: {level} | "
-                            f"Score: {score}"
-                        )
+                    baseline_engine.collect_event(event)
 
-                        print("\n" + "=" * 60)
-                        print(message)
+                    if event.indicators:
+                        report_suspicious_event(event, logger)
 
-                        print("Indicators:")
-                        for indicator in indicators:
-                            print(f"  - {indicator}")
-
-                        print("Reasons:")
-                        for reason in reasons:
-                            print(f"  - {reason}")
-
-                        print("=" * 60)
-
-                        logger.warning(message)
-
-                        for reason in reasons:
-                            logger.warning(f"Reason: {reason}")
+                    if anomaly_result.get("is_anomaly"):
+                        report_behavioral_anomaly(event, anomaly_result, logger)
 
                 previous_processes = current_processes
+                baseline_engine.save_baseline()
 
         except KeyboardInterrupt:
             print("\nEndpoint Security Monitor stopped cleanly.")

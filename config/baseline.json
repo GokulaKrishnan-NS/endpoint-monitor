@@ -1,0 +1,887 @@
+{
+  "total_observed_events": 563,
+  "process_profiles": {
+    "system idle process": {
+      "execution_count": 2,
+      "known_parents": [
+        "system idle process"
+      ],
+      "known_users": [
+        "nt authority\\system"
+      ]
+    },
+    "system": {
+      "execution_count": 2,
+      "known_parents": [
+        "system idle process"
+      ],
+      "known_users": [
+        "nt authority\\system"
+      ]
+    },
+    "registry": {
+      "execution_count": 2,
+      "known_parents": [
+        "system"
+      ],
+      "known_users": []
+    },
+    "svchost.exe": {
+      "execution_count": 187,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "smss.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "system"
+      ],
+      "known_users": []
+    },
+    "csrss.exe": {
+      "execution_count": 4,
+      "known_parents": [],
+      "known_users": []
+    },
+    "wininit.exe": {
+      "execution_count": 2,
+      "known_parents": [],
+      "known_users": []
+    },
+    "antigravity ide.exe": {
+      "execution_count": 2,
+      "known_parents": [],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "services.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "wininit.exe"
+      ],
+      "known_users": []
+    },
+    "lsaiso.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "wininit.exe"
+      ],
+      "known_users": []
+    },
+    "lsass.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "wininit.exe"
+      ],
+      "known_users": []
+    },
+    "chrome.exe": {
+      "execution_count": 32,
+      "known_parents": [
+        "chrome.exe",
+        "explorer.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "wudfhost.exe": {
+      "execution_count": 6,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "fontdrvhost.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "wininit.exe",
+        "winlogon.exe"
+      ],
+      "known_users": []
+    },
+    "ipf_helper.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "ipf_uf.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "explorer.exe": {
+      "execution_count": 2,
+      "known_parents": [],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "intelcphdcpsvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "scsecsvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "arwsrvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "bssiss.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "scsecsvc.exe"
+      ],
+      "known_users": []
+    },
+    "brave.exe": {
+      "execution_count": 22,
+      "known_parents": [
+        "brave.exe",
+        "explorer.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "memcompression": {
+      "execution_count": 2,
+      "known_parents": [
+        "system"
+      ],
+      "known_users": []
+    },
+    "ctfmon.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "ctaudsvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "conhost.exe": {
+      "execution_count": 8,
+      "known_parents": [
+        "language_server.exe",
+        "postgres.exe",
+        "language_server_windows_x64.exe",
+        "presentmonservice.exe",
+        "pet.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "mpdefendercoreservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "smsvchost.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "spoolsv.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "cmediaaudioutility.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "explorer.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "sapissvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "audiodg.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": []
+    },
+    "opssvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "dchuservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "creative.vadmonitorservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "bdssvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "qhccmsvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "emlproxy.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "wssrvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "ipfsvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "googleplaygamesservices.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "intelaudioservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "ipf_uf.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "jhi_service.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "pg_ctl.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "quhlpsvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "reprsvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "rtkauduservice64.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "services.exe",
+        "explorer.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "fcmcomm.exe": {
+      "execution_count": 8,
+      "known_parents": [
+        "fcmcomm.exe",
+        "qhccmsvc.exe"
+      ],
+      "known_users": []
+    },
+    "lockapp.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "spsvc.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "msmpeng.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "wmiregistrationservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "xtuservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "wslservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "notion.exe": {
+      "execution_count": 12,
+      "known_parents": [
+        "explorer.exe",
+        "notion.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "taskhostw.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "systemsettings.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "crashpad_handler.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "googleplaygamesservices.exe"
+      ],
+      "known_users": []
+    },
+    "wmiprvse.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": []
+    },
+    "postgres.exe": {
+      "execution_count": 20,
+      "known_parents": [
+        "pg_ctl.exe",
+        "postgres.exe"
+      ],
+      "known_users": []
+    },
+    "fnkey.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "explorer.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "msedgewebview2.exe": {
+      "execution_count": 24,
+      "known_parents": [
+        "msedgewebview2.exe",
+        "linkedin.exe",
+        "searchhost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "crossdeviceservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "intelgraphicssoftware.service.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "aggregatorhost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": []
+    },
+    "wlanext.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": []
+    },
+    "textinputhost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "node.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "cmd.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "scanwscsex.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "cmd.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "language_server_windows_x64.exe",
+        "node.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "securityhealthsystray.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "explorer.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "runtimebroker.exe": {
+      "execution_count": 10,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "shellhost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "sihost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "searchindexer.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "microsoftstartfeedprovider.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "crossdeviceresume.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "sihost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "presentmonservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "intelgraphicssoftware.service.exe"
+      ],
+      "known_users": []
+    },
+    "onlinent.exe": {
+      "execution_count": 2,
+      "known_parents": [],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "applicationframehost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "antigravity.exe": {
+      "execution_count": 6,
+      "known_parents": [
+        "antigravity.exe",
+        "explorer.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "defendersessionhelper.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "msmpeng.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "language_server_windows_x64.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "antigravity ide.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "jsrtmon2.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "widgetservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "nissrv.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "securityhealthservice.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "python.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "python.exe",
+        "powershell.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "dwm.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "winlogon.exe"
+      ],
+      "known_users": []
+    },
+    "linkedin.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "explorer.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "startmenuexperiencehost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "widgetboard.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "useroobebroker.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "jusched.exe": {
+      "execution_count": 2,
+      "known_parents": [],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "winlogon.exe": {
+      "execution_count": 2,
+      "known_parents": [],
+      "known_users": []
+    },
+    "sihost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "language_server.exe": {
+      "execution_count": 1,
+      "known_parents": [
+        "antigravity.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "shellexperiencehost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "officeclicktorun.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": []
+    },
+    "monotificationux.exe": {
+      "execution_count": 2,
+      "known_parents": [],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "searchhost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "imemode.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "dchuservice.exe"
+      ],
+      "known_users": []
+    },
+    "appactions.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "sdxhelper.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "dllhost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "phoneexperiencehost.exe": {
+      "execution_count": 2,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "powershell.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "language_server.exe",
+        "code.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "code.exe": {
+      "execution_count": 14,
+      "known_parents": [
+        "code.exe",
+        "explorer.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "openconsole.exe": {
+      "execution_count": 3,
+      "known_parents": [
+        "code.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "pet.exe": {
+      "execution_count": 1,
+      "known_parents": [
+        "code.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "smartscreen.exe": {
+      "execution_count": 1,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    }
+  },
+  "cpu_samples": [],
+  "memory_samples": []
+}
