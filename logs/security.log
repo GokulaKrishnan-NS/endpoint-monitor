@@ -136,3 +136,71 @@
 2026-09-05 18:29:37,662 | INFO | Process monitor detected 284 running processes.
 2026-09-05 18:29:37,664 | WARNING | Suspicious process detected | PID: 12516 | Process: powershell.exe | Parent: powershell.exe | Risk: MEDIUM | Score: 4
 2026-09-05 18:29:37,664 | WARNING | Reason: Encoded Command (+4)
+2026-09-16 21:19:43,806 | INFO | Endpoint Security Monitor started.
+2026-09-16 21:19:44,297 | WARNING | RESOURCE WARNING | MEMORY | Elevated usage exceeded threshold: 71.2% | Severity: MEDIUM
+2026-09-16 21:19:44,297 | WARNING | RESOURCE WARNING | DISK | Elevated usage exceeded threshold: 82.9% | Severity: MEDIUM
+2026-09-16 21:19:44,298 | INFO | System resources initial check - CPU: 9.3%, Memory: 11.19 GB / 15.71 GB (71.2%)
+2026-09-16 21:19:49,452 | INFO | Process monitor detected 275 running processes.
+2026-09-16 21:43:59,018 | INFO | Endpoint Security Monitor started.
+2026-09-16 21:44:00,123 | WARNING | RESOURCE WARNING | MEMORY | Elevated usage exceeded threshold: 86.4% | Severity: MEDIUM
+2026-09-16 21:44:00,123 | WARNING | RESOURCE WARNING | DISK | Elevated usage exceeded threshold: 83.9% | Severity: MEDIUM
+2026-09-16 21:44:00,124 | INFO | System resources initial check - CPU: 3.7%, Memory: 13.58 GB / 15.71 GB (86.4%)
+2026-09-16 21:44:05,915 | INFO | Process monitor detected 303 running processes.
+2026-09-16 22:03:57,028 | INFO | Test baseline log verification entry
+2026-09-16 22:05:10,262 | INFO | Test baseline log verification entry
+2026-09-16 22:13:51,880 | INFO | Endpoint Security Monitor started.
+2026-09-16 22:13:52,265 | WARNING | RESOURCE WARNING | MEMORY | Elevated usage exceeded threshold: 70.1% | Severity: MEDIUM
+2026-09-16 22:13:52,265 | WARNING | RESOURCE WARNING | DISK | Elevated usage exceeded threshold: 84.0% | Severity: MEDIUM
+2026-09-16 22:13:52,266 | INFO | System resources initial check - CPU: 19.4%, Memory: 11.01 GB / 15.71 GB (70.1%)
+2026-09-16 22:13:56,729 | INFO | Process monitor detected 275 running processes.
+2026-09-16 22:14:14,463 | INFO | Endpoint Security Monitor started.
+2026-09-16 22:14:14,853 | WARNING | RESOURCE WARNING | MEMORY | Elevated usage exceeded threshold: 70.1% | Severity: MEDIUM
+2026-09-16 22:14:14,854 | WARNING | RESOURCE WARNING | DISK | Elevated usage exceeded threshold: 84.0% | Severity: MEDIUM
+2026-09-16 22:14:14,854 | INFO | System resources initial check - CPU: 31.1%, Memory: 11.02 GB / 15.71 GB (70.1%)
+2026-09-16 22:14:19,043 | INFO | Process monitor detected 275 running processes.
+2026-09-16 22:25:00,470 | INFO | Endpoint Security Monitor started.
+2026-09-16 22:25:00,848 | WARNING | RESOURCE WARNING | DISK | Elevated usage exceeded threshold: 84.0% | Severity: MEDIUM
+2026-09-16 22:25:00,848 | INFO | System resources initial check - CPU: 11.3%, Memory: 10.51 GB / 15.71 GB (66.9%)
+2026-09-16 22:25:05,216 | INFO | Process monitor detected 275 running processes.
+2026-09-16 22:25:05,218 | WARNING | Behavioral Anomaly detected | PID: 6208 | Process: RtkAudUService64.exe | Parent: explorer.exe | Anomaly Level: HIGH | Anomaly Score: 5
+2026-09-16 22:25:05,218 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: explorer.exe -> RtkAudUService64.exe (+3)
+2026-09-16 22:25:05,218 | WARNING | Baseline Anomaly Reason: Unseen user context for RtkAudUService64.exe: GREENAPPLE\ACER (+2)
+2026-09-16 22:25:05,218 | WARNING | Behavioral Anomaly detected | PID: 8100 | Process: conhost.exe | Parent: postgres.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,218 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: postgres.exe -> conhost.exe (+3)
+2026-09-16 22:25:05,218 | WARNING | Behavioral Anomaly detected | PID: 8452 | Process: postgres.exe | Parent: postgres.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,218 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: postgres.exe -> postgres.exe (+3)
+2026-09-16 22:25:05,218 | WARNING | Behavioral Anomaly detected | PID: 8484 | Process: conhost.exe | Parent: language_server_windows_x64.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,218 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: language_server_windows_x64.exe -> conhost.exe (+3)
+2026-09-16 22:25:05,218 | WARNING | Behavioral Anomaly detected | PID: 10452 | Process: fcmcomm.exe | Parent: qhccmsvc.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,219 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: qhccmsvc.exe -> fcmcomm.exe (+3)
+2026-09-16 22:25:05,219 | WARNING | Behavioral Anomaly detected | PID: 13124 | Process: msedgewebview2.exe | Parent: LinkedIn.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,219 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: LinkedIn.exe -> msedgewebview2.exe (+3)
+2026-09-16 22:25:05,219 | WARNING | Behavioral Anomaly detected | PID: 13792 | Process: fontdrvhost.exe | Parent: winlogon.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,219 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: winlogon.exe -> fontdrvhost.exe (+3)
+2026-09-16 22:25:05,219 | WARNING | Behavioral Anomaly detected | PID: 13820 | Process: conhost.exe | Parent: PresentMonService.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,219 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: PresentMonService.exe -> conhost.exe (+3)
+2026-09-16 22:25:05,219 | WARNING | Behavioral Anomaly detected | PID: 14260 | Process: cmd.exe | Parent: node.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,219 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: node.exe -> cmd.exe (+3)
+2026-09-16 22:25:05,220 | WARNING | Behavioral Anomaly detected | PID: 15420 | Process: Notion.exe | Parent: Notion.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,220 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: Notion.exe -> Notion.exe (+3)
+2026-09-16 22:25:05,220 | WARNING | Behavioral Anomaly detected | PID: 15564 | Process: chrome.exe | Parent: explorer.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,220 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: explorer.exe -> chrome.exe (+3)
+2026-09-16 22:25:05,220 | WARNING | Behavioral Anomaly detected | PID: 16496 | Process: brave.exe | Parent: explorer.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,220 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: explorer.exe -> brave.exe (+3)
+2026-09-16 22:25:05,221 | WARNING | Behavioral Anomaly detected | PID: 20088 | Process: msedgewebview2.exe | Parent: SearchHost.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,221 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: SearchHost.exe -> msedgewebview2.exe (+3)
+2026-09-16 22:25:05,221 | WARNING | Behavioral Anomaly detected | PID: 23192 | Process: Antigravity.exe | Parent: explorer.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,221 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: explorer.exe -> Antigravity.exe (+3)
+2026-09-16 22:25:05,221 | WARNING | Behavioral Anomaly detected | PID: 25548 | Process: python.exe | Parent: powershell.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:25:05,221 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: powershell.exe -> python.exe (+3)
+2026-09-16 22:30:26,945 | INFO | Endpoint Security Monitor started.
+2026-09-16 22:30:27,312 | WARNING | RESOURCE WARNING | MEMORY | Elevated usage exceeded threshold: 73.2% | Severity: MEDIUM
+2026-09-16 22:30:27,312 | WARNING | RESOURCE WARNING | DISK | Elevated usage exceeded threshold: 84.0% | Severity: MEDIUM
+2026-09-16 22:30:27,312 | INFO | System resources initial check - CPU: 7.1%, Memory: 11.51 GB / 15.71 GB (73.2%)
+2026-09-16 22:30:31,360 | INFO | Process monitor detected 288 running processes.
+2026-09-16 22:30:31,362 | WARNING | Behavioral Anomaly detected | PID: 3924 | Process: conhost.exe | Parent: pet.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:30:31,362 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: pet.exe -> conhost.exe (+3)
+2026-09-16 22:30:31,365 | WARNING | Behavioral Anomaly detected | PID: 15736 | Process: Code.exe | Parent: explorer.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:30:31,365 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: explorer.exe -> Code.exe (+3)
+2026-09-16 22:30:31,369 | WARNING | Behavioral Anomaly detected | PID: 25336 | Process: powershell.exe | Parent: Code.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
+2026-09-16 22:30:31,369 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: Code.exe -> powershell.exe (+3)
