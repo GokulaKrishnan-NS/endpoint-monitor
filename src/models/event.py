@@ -65,3 +65,26 @@ class Event:
             username=process_info.get("username"),
             command_line=process_info.get("cmdline"),
         )
+
+    @classmethod
+    def from_network_connection(
+        cls,
+        conn_info: Dict[str, Any],
+        process_info: Optional[Dict[str, Any]] = None,
+    ) -> "Event":
+        """
+        Helper factory method to construct a standard Event from a network connection dictionary.
+        """
+        proc = process_info or {}
+        return cls(
+            event_type="network_connection",
+            source="network_monitor",
+            severity="LOW",
+            pid=conn_info.get("pid") or proc.get("pid"),
+            ppid=proc.get("ppid"),
+            process_name=conn_info.get("process_name") or proc.get("name"),
+            parent_process_name=conn_info.get("parent_process_name") or proc.get("parent_name"),
+            username=proc.get("username"),
+            command_line=proc.get("cmdline"),
+            network_info=conn_info,
+        )
