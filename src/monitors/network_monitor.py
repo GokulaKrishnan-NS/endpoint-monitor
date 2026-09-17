@@ -12,10 +12,17 @@ import json
 import logging
 import os
 import socket
+import sys
 import threading
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 import psutil
+
+# Ensure repository root is on sys.path for direct script execution
+_project_root = str(Path(__file__).resolve().parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
 from src.models.event import Event
 from src.detectors.risk_detector import calculate_risk
