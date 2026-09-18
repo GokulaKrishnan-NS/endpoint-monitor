@@ -1,0 +1,226 @@
+{
+  "resource_monitor": {
+    "check_interval": 5,
+    "cpu": {
+      "medium_threshold": 70.0,
+      "high_threshold": 90.0,
+      "sustained_samples": 3
+    },
+    "memory": {
+      "medium_threshold": 70.0,
+      "high_threshold": 90.0,
+      "sustained_samples": 3
+    },
+    "swap": {
+      "enabled": true,
+      "medium_threshold": 70.0,
+      "high_threshold": 90.0,
+      "sustained_samples": 3
+    },
+    "disk": {
+      "enabled": true,
+      "medium_threshold": 80.0,
+      "high_threshold": 90.0,
+      "sustained_samples": 3,
+      "mount_point": "default"
+    }
+  },
+  "process_tree": {
+    "enabled": true,
+    "max_tree_depth": 10,
+    "suspicious_rules": [
+      {
+        "parents": [
+          "chrome.exe",
+          "firefox.exe",
+          "msedge.exe",
+          "brave.exe",
+          "opera.exe",
+          "iexplore.exe",
+          "safari.exe",
+          "msedgewebview2.exe"
+        ],
+        "children": [
+          "cmd.exe",
+          "powershell.exe",
+          "pwsh.exe",
+          "bash.exe",
+          "sh.exe",
+          "wscript.exe",
+          "cscript.exe",
+          "certutil.exe",
+          "mshta.exe"
+        ],
+        "indicator": "suspicious_process_lineage",
+        "score": 4,
+        "severity": "MEDIUM",
+        "reason": "Web browser spawned command shell or script host"
+      },
+      {
+        "parents": [
+          "winword.exe",
+          "excel.exe",
+          "powerpnt.exe",
+          "outlook.exe",
+          "msaccess.exe",
+          "acrobat.exe",
+          "acrord32.exe"
+        ],
+        "children": [
+          "cmd.exe",
+          "powershell.exe",
+          "pwsh.exe",
+          "wscript.exe",
+          "cscript.exe",
+          "mshta.exe",
+          "regsvr32.exe",
+          "rundll32.exe",
+          "certutil.exe",
+          "schtasks.exe"
+        ],
+        "indicator": "suspicious_process_lineage",
+        "score": 5,
+        "severity": "HIGH",
+        "reason": "Office/Productivity application spawned command interpreter or script host"
+      },
+      {
+        "parents": [
+          "w3wp.exe",
+          "httpd.exe",
+          "nginx.exe",
+          "tomcat.exe",
+          "sqlservr.exe",
+          "postgres.exe",
+          "mysqld.exe"
+        ],
+        "children": [
+          "cmd.exe",
+          "powershell.exe",
+          "pwsh.exe",
+          "bash.exe",
+          "sh.exe",
+          "whoami.exe",
+          "net.exe"
+        ],
+        "indicator": "suspicious_process_lineage",
+        "score": 5,
+        "severity": "HIGH",
+        "reason": "Server or database daemon spawned command shell"
+      },
+      {
+        "parents": [
+          "calc.exe",
+          "notepad.exe",
+          "spoolsv.exe"
+        ],
+        "children": [
+          "cmd.exe",
+          "powershell.exe",
+          "pwsh.exe",
+          "rundll32.exe",
+          "regsvr32.exe"
+        ],
+        "indicator": "suspicious_process_lineage",
+        "score": 4,
+        "severity": "MEDIUM",
+        "reason": "Unusual desktop utility spawned command interpreter"
+      },
+      {
+        "parents": [
+          "powershell.exe",
+          "pwsh.exe"
+        ],
+        "children": [
+          "cmd.exe"
+        ],
+        "indicator": "shell_spawning_shell",
+        "score": 2,
+        "severity": "LOW",
+        "reason": "PowerShell spawned CMD shell"
+      },
+      {
+        "parents": [
+          "cmd.exe"
+        ],
+        "children": [
+          "powershell.exe",
+          "pwsh.exe"
+        ],
+        "indicator": "shell_spawning_shell",
+        "score": 2,
+        "severity": "LOW",
+        "reason": "CMD spawned PowerShell shell"
+      }
+    ],
+    "multi_level_rules": [
+      {
+        "ancestor_apps": [
+          "chrome.exe",
+          "firefox.exe",
+          "msedge.exe",
+          "brave.exe",
+          "winword.exe",
+          "excel.exe",
+          "outlook.exe",
+          "powerpnt.exe"
+        ],
+        "target_shells": [
+          "cmd.exe",
+          "powershell.exe",
+          "pwsh.exe",
+          "bash.exe",
+          "sh.exe"
+        ],
+        "min_depth": 2,
+        "indicator": "multi_level_shell_chain",
+        "score": 5,
+        "severity": "HIGH",
+        "reason": "Multi-level execution chain from untrusted application to command shell"
+      }
+    ]
+  },
+  "network_monitor": {
+    "enabled": true,
+    "check_interval": 5,
+    "suspicious_ports": [
+      21,
+      23,
+      69,
+      1337,
+      4444,
+      5555,
+      6667,
+      8888,
+      9999,
+      12345,
+      31337
+    ],
+    "unexpected_processes": [
+      "notepad.exe",
+      "calc.exe",
+      "mspaint.exe",
+      "cmd.exe",
+      "spoolsv.exe",
+      "taskhostw.exe",
+      "regsvr32.exe",
+      "mshta.exe"
+    ],
+    "script_interpreters": [
+      "powershell.exe",
+      "pwsh.exe",
+      "wscript.exe",
+      "cscript.exe",
+      "bash.exe",
+      "sh.exe",
+      "python.exe"
+    ],
+    "standard_outbound_ports": [
+      80,
+      443,
+      8080,
+      8443,
+      53
+    ]
+  }
+}
+
