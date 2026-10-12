@@ -221,6 +221,22 @@
       8443,
       53
     ]
+  },
+  "controlled_execution": {
+    "enabled": true,
+    "dry_run": true,
+    "score_threshold": 7,
+    "blocked_severities": [
+      "HIGH"
+    ],
+    "blocked_indicators": [],
+    "fail_closed": true,
+    "launcher": {
+      "allow_active_execution": false,
+      "default_timeout_seconds": 30,
+      "max_output_bytes": 65536,
+      "allowed_working_directories": []
+    }
   }
 }
 
