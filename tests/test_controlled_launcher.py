@@ -525,5 +525,124 @@ class TestControlledRealExecution(unittest.TestCase):
         self.assertTrue(result.truncated)
 
 
+class TestSecurityRemediationsSec01AndSec02(unittest.TestCase):
+    """
+    Dedicated regression test suite for security findings SEC-01 and SEC-02.
+    """
+
+    def setUp(self):
+        self.python_exe = sys.executable
+        self.active_config = {
+            "enabled": True,
+            "dry_run": False,
+            "launcher": {
+                "allow_active_execution": True,
+            },
+        }
+        self.launcher = ControlledLauncher(config=self.active_config)
+
+    # --- SEC-01: Null Character Rejection ---
+
+    @patch("subprocess.Popen")
+    def test_null_character_in_executable_fails_closed(self, mock_popen):
+        req = ExecutionRequest(
+            executable="cmd.exe\0test",
+            command_line=["cmd.exe\0test"],
+        )
+        result = self.launcher.launch(req)
+        self.assertFalse(result.executed)
+        self.assertEqual(result.decision.decision, DecisionStatus.BLOCK)
+        self.assertIn("null character", result.error.lower())
+        mock_popen.assert_not_called()
+
+    @patch("subprocess.Popen")
+    def test_null_character_in_command_line_arg_fails_closed(self, mock_popen):
+        req = ExecutionRequest(
+            executable=self.python_exe,
+            command_line=[self.python_exe, "arg\0null"],
+        )
+        result = self.launcher.launch(req)
+        self.assertFalse(result.executed)
+        self.assertEqual(result.decision.decision, DecisionStatus.BLOCK)
+        self.assertIn("null character", result.error.lower())
+        mock_popen.assert_not_called()
+
+    @patch("subprocess.Popen")
+    def test_null_character_in_working_directory_fails_closed(self, mock_popen):
+        req = ExecutionRequest(
+            executable=self.python_exe,
+            command_line=[self.python_exe, "-c", "pass"],
+            working_directory="C:\\temp\0dir",
+        )
+        result = self.launcher.launch(req)
+        self.assertFalse(result.executed)
+        self.assertEqual(result.decision.decision, DecisionStatus.BLOCK)
+        self.assertIn("null character", result.error.lower())
+        mock_popen.assert_not_called()
+
+    def test_null_character_helper_functions_defensive_rejection(self):
+        self.assertIsNone(_resolve_canonical_executable("calc.exe\0payload"))
+        self.assertFalse(_is_cwd_permitted("C:\\path\0invalid", []))
+        self.assertFalse(_is_same_canonical_file("a\0", "b"))
+
+    # --- SEC-02: Executable Resolution and PATH Precedence ---
+
+    def test_bare_executable_resolved_using_path(self):
+        resolved = _resolve_canonical_executable("cmd.exe")
+        self.assertIsNotNone(resolved)
+        self.assertTrue(os.path.isabs(resolved))
+        self.assertTrue(os.path.isfile(resolved))
+        self.assertIn("system32", resolved.lower())
+
+    def test_cwd_executable_does_not_precede_path_result(self):
+        temp_dir = tempfile.mkdtemp()
+        old_cwd = os.getcwd()
+        fake_binary = os.path.join(temp_dir, "cmd.exe")
+        try:
+            with open(fake_binary, "w") as f:
+                f.write("fake binary content")
+
+            os.chdir(temp_dir)
+
+            # Bare executable resolution must resolve to system PATH, NOT the fake in CWD
+            resolved_bare = _resolve_canonical_executable("cmd.exe")
+            self.assertIsNotNone(resolved_bare)
+            self.assertNotEqual(
+                os.path.normcase(os.path.realpath(resolved_bare)),
+                os.path.normcase(os.path.realpath(fake_binary)),
+            )
+            self.assertIn("system32", resolved_bare.lower())
+
+            # Explicit relative path must still resolve to the local file
+            resolved_explicit = _resolve_canonical_executable(".\\cmd.exe")
+            self.assertIsNotNone(resolved_explicit)
+            self.assertEqual(
+                os.path.normcase(os.path.realpath(resolved_explicit)),
+                os.path.normcase(os.path.realpath(fake_binary)),
+            )
+        finally:
+            os.chdir(old_cwd)
+            if os.path.exists(fake_binary):
+                os.remove(fake_binary)
+            os.rmdir(temp_dir)
+
+    def test_explicit_relative_and_absolute_paths_retain_behavior(self):
+        # Explicit absolute path
+        resolved_abs = _resolve_canonical_executable(self.python_exe)
+        self.assertIsNotNone(resolved_abs)
+        self.assertEqual(
+            os.path.normcase(os.path.realpath(resolved_abs)),
+            os.path.normcase(os.path.realpath(self.python_exe)),
+        )
+
+        # Nonexistent explicit relative path
+        resolved_nonexistent_explicit = _resolve_canonical_executable("./nonexistent_tool_12345.exe")
+        self.assertIsNone(resolved_nonexistent_explicit)
+
+        # Nonexistent bare executable
+        resolved_nonexistent_bare = _resolve_canonical_executable("nonexistent_tool_12345.exe")
+        self.assertIsNone(resolved_nonexistent_bare)
+
+
 if __name__ == "__main__":
     unittest.main()

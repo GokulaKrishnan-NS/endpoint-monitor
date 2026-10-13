@@ -41,6 +41,8 @@ class ExecutionRequest:
         """
         if not isinstance(self.executable, str) or not self.executable.strip():
             return False, "Executable must be a non-empty string"
+        if "\0" in self.executable:
+            return False, "Executable must not contain null characters"
 
         if not isinstance(self.command_line, list) or len(self.command_line) == 0:
             return False, "Command line must be a non-empty list of strings"
@@ -48,19 +50,30 @@ class ExecutionRequest:
         for idx, arg in enumerate(self.command_line):
             if not isinstance(arg, str):
                 return False, f"Command line argument at index {idx} must be a string, got {type(arg).__name__}"
+            if "\0" in arg:
+                return False, f"Command line argument at index {idx} must not contain null characters"
 
         if self.parent_pid is not None:
             if not isinstance(self.parent_pid, int) or isinstance(self.parent_pid, bool) or self.parent_pid < 0:
                 return False, f"Parent PID must be a non-negative integer, got {self.parent_pid!r}"
 
-        if self.parent_process_name is not None and not isinstance(self.parent_process_name, str):
-            return False, f"Parent process name must be a string or None, got {type(self.parent_process_name).__name__}"
+        if self.parent_process_name is not None:
+            if not isinstance(self.parent_process_name, str):
+                return False, f"Parent process name must be a string or None, got {type(self.parent_process_name).__name__}"
+            if "\0" in self.parent_process_name:
+                return False, "Parent process name must not contain null characters"
 
-        if self.username is not None and not isinstance(self.username, str):
-            return False, f"Username must be a string or None, got {type(self.username).__name__}"
+        if self.username is not None:
+            if not isinstance(self.username, str):
+                return False, f"Username must be a string or None, got {type(self.username).__name__}"
+            if "\0" in self.username:
+                return False, "Username must not contain null characters"
 
-        if self.working_directory is not None and not isinstance(self.working_directory, str):
-            return False, f"Working directory must be a string or None, got {type(self.working_directory).__name__}"
+        if self.working_directory is not None:
+            if not isinstance(self.working_directory, str):
+                return False, f"Working directory must be a string or None, got {type(self.working_directory).__name__}"
+            if "\0" in self.working_directory:
+                return False, "Working directory must not contain null characters"
 
         if not isinstance(self.metadata, dict):
             return False, f"Metadata must be a dictionary, got {type(self.metadata).__name__}"

@@ -83,22 +83,47 @@ def _resolve_canonical_executable(exe_name_or_path: str) -> Optional[str]:
     """
     Resolve a command or path to its absolute canonical target file.
     Returns normalized canonical path if found and is a file, else None.
+    Distinguishes explicitly supplied paths from bare executable names.
+    For bare executable names, searches PATH directories without allowing
+    a same-named file in the current working directory to take precedence.
     """
-    if not isinstance(exe_name_or_path, str) or not exe_name_or_path.strip():
+    if not isinstance(exe_name_or_path, str) or not exe_name_or_path.strip() or "\0" in exe_name_or_path:
         return None
 
     stripped = exe_name_or_path.strip()
 
-    # If already a path with directory component or existing file
-    if os.path.dirname(stripped) or os.path.exists(stripped):
-        if os.path.isfile(stripped):
-            return os.path.realpath(stripped)
-        return None
+    try:
+        drive, _ = os.path.splitdrive(stripped)
+        has_dir = bool(os.path.dirname(stripped))
+        has_drive = bool(drive)
+        is_explicit_path = has_dir or has_drive
 
-    # Search PATH via shutil.which
-    found = shutil.which(stripped)
-    if found and os.path.isfile(found):
-        return os.path.realpath(found)
+        if is_explicit_path:
+            # Explicit relative or absolute path
+            if os.path.isfile(stripped):
+                return os.path.realpath(stripped)
+            # Check with shutil.which for explicit path with implicit extension (e.g., ./app -> ./app.exe)
+            found = shutil.which(stripped)
+            if found and os.path.isfile(found):
+                return os.path.realpath(found)
+            return None
+
+        # Bare executable name: search PATH entries explicitly to prevent CWD precedence
+        path_env = os.environ.get("PATH", "")
+        for p in path_env.split(os.pathsep):
+            p_clean = p.strip().strip('"')
+            if not p_clean:
+                continue
+            try:
+                candidate = os.path.join(p_clean, stripped)
+                found = shutil.which(candidate)
+                if found and os.path.isfile(found):
+                    return os.path.realpath(found)
+            except (ValueError, OSError):
+                continue
+
+    except (ValueError, OSError):
+        return None
 
     return None
 
@@ -108,16 +133,22 @@ def _is_same_canonical_file(path_a: str, path_b: str) -> bool:
     Determine if two paths point to the exact same canonical file on disk.
     Uses os.path.samefile where supported, falling back to case-normalized realpaths.
     """
-    try:
-        return os.path.samefile(path_a, path_b)
-    except (AttributeError, OSError):
-        pass
+    if not isinstance(path_a, str) or not isinstance(path_b, str) or "\0" in path_a or "\0" in path_b:
+        return False
 
-    real_a = os.path.realpath(path_a)
-    real_b = os.path.realpath(path_b)
-    if os.name == "nt":
-        return os.path.normcase(real_a) == os.path.normcase(real_b)
-    return real_a == real_b
+    try:
+        try:
+            return os.path.samefile(path_a, path_b)
+        except (AttributeError, OSError):
+            pass
+
+        real_a = os.path.realpath(path_a)
+        real_b = os.path.realpath(path_b)
+        if os.name == "nt":
+            return os.path.normcase(real_a) == os.path.normcase(real_b)
+        return real_a == real_b
+    except (ValueError, OSError):
+        return False
 
 
 def _is_cwd_permitted(target_cwd: str, allowed_dirs: List[str]) -> bool:
@@ -126,31 +157,39 @@ def _is_cwd_permitted(target_cwd: str, allowed_dirs: List[str]) -> bool:
     and path-component containment. When allowlist is empty, permits only the
     current working directory.
     """
-    canonical_target = os.path.realpath(target_cwd)
-    if not os.path.isdir(canonical_target):
+    if not isinstance(target_cwd, str) or not target_cwd.strip() or "\0" in target_cwd:
         return False
 
-    norm_target = os.path.normcase(canonical_target) if os.name == "nt" else canonical_target
+    try:
+        canonical_target = os.path.realpath(target_cwd)
+        if not os.path.isdir(canonical_target):
+            return False
 
-    if not allowed_dirs:
-        canonical_cwd = os.path.realpath(os.getcwd())
-        norm_cwd = os.path.normcase(canonical_cwd) if os.name == "nt" else canonical_cwd
-        return norm_target == norm_cwd
+        norm_target = os.path.normcase(canonical_target) if os.name == "nt" else canonical_target
 
-    for allowed in allowed_dirs:
-        canonical_allowed = os.path.realpath(allowed)
-        if not os.path.isdir(canonical_allowed):
-            continue
+        if not allowed_dirs:
+            canonical_cwd = os.path.realpath(os.getcwd())
+            norm_cwd = os.path.normcase(canonical_cwd) if os.name == "nt" else canonical_cwd
+            return norm_target == norm_cwd
 
-        try:
-            common = os.path.commonpath([canonical_allowed, canonical_target])
-            norm_common = os.path.normcase(common) if os.name == "nt" else common
-            norm_allowed = os.path.normcase(canonical_allowed) if os.name == "nt" else canonical_allowed
-            if norm_common == norm_allowed:
-                return True
-        except ValueError:
-            # Different drives on Windows
-            continue
+        for allowed in allowed_dirs:
+            if not isinstance(allowed, str) or not allowed.strip() or "\0" in allowed:
+                continue
+            canonical_allowed = os.path.realpath(allowed)
+            if not os.path.isdir(canonical_allowed):
+                continue
+
+            try:
+                common = os.path.commonpath([canonical_allowed, canonical_target])
+                norm_common = os.path.normcase(common) if os.name == "nt" else common
+                norm_allowed = os.path.normcase(canonical_allowed) if os.name == "nt" else canonical_allowed
+                if norm_common == norm_allowed:
+                    return True
+            except ValueError:
+                # Different drives on Windows
+                continue
+    except (ValueError, OSError):
+        return False
 
     return False
 
