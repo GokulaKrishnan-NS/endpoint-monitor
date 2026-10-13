@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional
 DEFAULT_CONTROLLED_EXECUTION_CONFIG: Dict[str, Any] = {
     "enabled": True,
     "dry_run": True,
+    "interception_enabled": False,
     "score_threshold": 7,
     "blocked_severities": ["HIGH"],
     "blocked_indicators": [],
@@ -35,6 +36,7 @@ def load_execution_config(config_path: str = "config/config.json") -> Dict[str, 
     config = {
         "enabled": DEFAULT_CONTROLLED_EXECUTION_CONFIG["enabled"],
         "dry_run": DEFAULT_CONTROLLED_EXECUTION_CONFIG["dry_run"],
+        "interception_enabled": DEFAULT_CONTROLLED_EXECUTION_CONFIG["interception_enabled"],
         "score_threshold": DEFAULT_CONTROLLED_EXECUTION_CONFIG["score_threshold"],
         "blocked_severities": list(DEFAULT_CONTROLLED_EXECUTION_CONFIG["blocked_severities"]),
         "blocked_indicators": list(DEFAULT_CONTROLLED_EXECUTION_CONFIG["blocked_indicators"]),
@@ -65,6 +67,9 @@ def load_execution_config(config_path: str = "config/config.json") -> Dict[str, 
             if "dry_run" in ce_config:
                 val = ce_config["dry_run"]
                 config["dry_run"] = val if isinstance(val, bool) else True
+            if "interception_enabled" in ce_config:
+                val = ce_config["interception_enabled"]
+                config["interception_enabled"] = val if isinstance(val, bool) else False
             if "score_threshold" in ce_config:
                 config["score_threshold"] = int(ce_config["score_threshold"])
             if "blocked_severities" in ce_config:

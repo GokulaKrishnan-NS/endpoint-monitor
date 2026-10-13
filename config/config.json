@@ -225,6 +225,7 @@
   "controlled_execution": {
     "enabled": true,
     "dry_run": true,
+    "interception_enabled": false,
     "score_threshold": 7,
     "blocked_severities": [
       "HIGH"
