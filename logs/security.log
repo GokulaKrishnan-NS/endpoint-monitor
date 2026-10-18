@@ -204,3 +204,4 @@
 2026-09-16 22:30:31,365 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: explorer.exe -> Code.exe (+3)
 2026-09-16 22:30:31,369 | WARNING | Behavioral Anomaly detected | PID: 25336 | Process: powershell.exe | Parent: Code.exe | Anomaly Level: MEDIUM | Anomaly Score: 3
 2026-09-16 22:30:31,369 | WARNING | Baseline Anomaly Reason: Unseen parent-child lineage: Code.exe -> powershell.exe (+3)
+2026-10-12 22:06:10,698 | INFO | Test baseline log verification entry
