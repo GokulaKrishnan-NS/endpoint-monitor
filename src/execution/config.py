@@ -25,6 +25,17 @@ DEFAULT_CONTROLLED_EXECUTION_CONFIG: Dict[str, Any] = {
         "max_output_bytes": 65536,
         "allowed_working_directories": [],
     },
+    "windows_enforcement": {
+        "enabled": False,
+        "channels": [
+            "Microsoft-Windows-CodeIntegrity/Operational",
+            "Microsoft-Windows-AppLocker/EXE and DLL",
+        ],
+        "poll_interval_seconds": 5.0,
+        "max_events_per_query": 50,
+        "correlate_with_processes": True,
+        "alert_on_blocks": True,
+    },
 }
 
 
@@ -48,6 +59,14 @@ def load_execution_config(config_path: str = "config/config.json") -> Dict[str, 
             "allowed_working_directories": list(
                 DEFAULT_CONTROLLED_EXECUTION_CONFIG["launcher"]["allowed_working_directories"]
             ),
+        },
+        "windows_enforcement": {
+            "enabled": DEFAULT_CONTROLLED_EXECUTION_CONFIG["windows_enforcement"]["enabled"],
+            "channels": list(DEFAULT_CONTROLLED_EXECUTION_CONFIG["windows_enforcement"]["channels"]),
+            "poll_interval_seconds": DEFAULT_CONTROLLED_EXECUTION_CONFIG["windows_enforcement"]["poll_interval_seconds"],
+            "max_events_per_query": DEFAULT_CONTROLLED_EXECUTION_CONFIG["windows_enforcement"]["max_events_per_query"],
+            "correlate_with_processes": DEFAULT_CONTROLLED_EXECUTION_CONFIG["windows_enforcement"]["correlate_with_processes"],
+            "alert_on_blocks": DEFAULT_CONTROLLED_EXECUTION_CONFIG["windows_enforcement"]["alert_on_blocks"],
         },
     }
 
@@ -98,6 +117,31 @@ def load_execution_config(config_path: str = "config/config.json") -> Dict[str, 
                         config["launcher"]["allowed_working_directories"] = [
                             str(p) for p in val if isinstance(p, str)
                         ]
+
+            we_cfg = ce_config.get("windows_enforcement", {})
+            if isinstance(we_cfg, dict):
+                if "enabled" in we_cfg:
+                    config["windows_enforcement"]["enabled"] = bool(we_cfg["enabled"])
+                if "channels" in we_cfg and isinstance(we_cfg["channels"], list):
+                    config["windows_enforcement"]["channels"] = [
+                        str(c) for c in we_cfg["channels"] if isinstance(c, str)
+                    ]
+                if "poll_interval_seconds" in we_cfg:
+                    val = we_cfg["poll_interval_seconds"]
+                    if isinstance(val, (int, float)) and not isinstance(val, bool) and val > 0:
+                        config["windows_enforcement"]["poll_interval_seconds"] = float(val)
+                if "max_events_per_query" in we_cfg:
+                    val = we_cfg["max_events_per_query"]
+                    if isinstance(val, int) and not isinstance(val, bool) and val > 0:
+                        config["windows_enforcement"]["max_events_per_query"] = int(val)
+                if "correlate_with_processes" in we_cfg:
+                    config["windows_enforcement"]["correlate_with_processes"] = bool(
+                        we_cfg["correlate_with_processes"]
+                    )
+                if "alert_on_blocks" in we_cfg:
+                    config["windows_enforcement"]["alert_on_blocks"] = bool(
+                        we_cfg["alert_on_blocks"]
+                    )
 
     except Exception as e:
         logging.getLogger("endpoint_monitor").debug(

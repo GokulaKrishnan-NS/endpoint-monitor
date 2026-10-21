@@ -17,6 +17,15 @@ from src.execution.service import (
     redact_command_line,
     redact_string,
 )
+from src.execution.windows_enforcement import (
+    EnforcementOutcome,
+    NTPathNormalizer,
+    WindowsEnforcementCollector,
+    WindowsEnforcementCorrelator,
+    WindowsEnforcementEventType,
+    WindowsEnforcementRecord,
+    WindowsEventLogParser,
+)
 from src.models.execution_request import (
     DecisionStatus,
     ExecutionDecision,
@@ -39,4 +48,11 @@ __all__ = [
     "DecisionStatus",
     "ExecutionDecision",
     "ExecutionRequest",
+    "EnforcementOutcome",
+    "NTPathNormalizer",
+    "WindowsEnforcementCollector",
+    "WindowsEnforcementCorrelator",
+    "WindowsEnforcementEventType",
+    "WindowsEnforcementRecord",
+    "WindowsEventLogParser",
 ]
