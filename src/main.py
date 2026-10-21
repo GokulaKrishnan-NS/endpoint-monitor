@@ -6,16 +6,19 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import time
 
-from src.utils.logger import setup_logger
 from src.alerts.alert_manager import show_alert
-from src.monitors.process_monitor import get_running_processes, get_new_processes
-from src.monitors.resource_monitor import ResourceMonitor
-from src.monitors.network_monitor import NetworkMonitor
+from src.analysis.process_tree import ProcessTree, ProcessTreeAnalyzer
+from src.baseline.baseline_engine import BaselineEngine
 from src.detectors.command_detector import detect_command_indicators
 from src.detectors.risk_detector import calculate_risk
 from src.models.event import Event
-from src.baseline.baseline_engine import BaselineEngine
-from src.analysis.process_tree import ProcessTree, ProcessTreeAnalyzer
+from src.monitors.network_monitor import NetworkMonitor
+from src.monitors.process_monitor import get_new_processes, get_running_processes
+from src.monitors.resource_monitor import ResourceMonitor
+from src.ui.cli import run_cli_loop
+from src.ui.dashboard import SecurityDashboardApp, is_gui_available
+from src.ui.engine import MonitoringEngine
+from src.utils.logger import setup_logger
 
 
 def process_event_from_dict(process_info, process_tree=None, tree_analyzer=None):
@@ -164,23 +167,20 @@ def report_behavioral_anomaly(event, anomaly_result, logger):
         logger.warning(f"Baseline Anomaly Reason: {reason}")
 
 
-def main():
-    logger = setup_logger()
-
+def run_single_scan(logger):
+    """Execute a single-pass initial security snapshot scan."""
     print("Endpoint Security Monitor started.")
     logger.info("Endpoint Security Monitor started.")
-
     show_alert("System initialized successfully.")
 
-    # Initialize Behavioral Baseline Engine and Process Tree Analyzer
+    # Initialize components
     baseline_engine = BaselineEngine()
     tree_analyzer = ProcessTreeAnalyzer()
     network_monitor = NetworkMonitor(logger=logger)
-
-    # Resource Monitoring initial snapshot check
     resource_monitor = ResourceMonitor(logger=logger)
-    resource_result = resource_monitor.check_resources()
 
+    # Resource Monitoring initial check
+    resource_result = resource_monitor.check_resources()
     cpu_metrics = resource_result["metrics"]["cpu"]
     mem_metrics = resource_result["metrics"]["memory"]
     print(
@@ -194,11 +194,8 @@ def main():
 
     # Process Monitoring initial scan
     processes = get_running_processes()
-
     print(f"Monitoring {len(processes)} running processes.")
-    logger.info(
-        f"Process monitor detected {len(processes)} running processes."
-    )
+    logger.info(f"Process monitor detected {len(processes)} running processes.")
 
     # Build hierarchical Process Tree from initial snapshot
     process_tree = ProcessTree.build(processes)
@@ -212,24 +209,19 @@ def main():
             tree_analyzer=tree_analyzer,
         )
 
-        # Behavioral baseline evaluation
         anomaly_result = baseline_engine.analyze_event(event)
         event.metadata["baseline_anomaly"] = anomaly_result
-
-        # Collect clean events into baseline profiles
         baseline_engine.collect_event(event)
 
-        # Report static rule and process-tree indicators if present
         if event.indicators:
             report_suspicious_event(event, logger)
 
-        # Report behavioral anomalies if detected
         if anomaly_result.get("is_anomaly"):
             report_behavioral_anomaly(event, anomaly_result, logger)
 
     baseline_engine.save_baseline()
 
-    # Network Monitoring initial snapshot check
+    # Network Monitoring initial check
     net_result = network_monitor.check_connections(
         processes=processes,
         process_tree=process_tree,
@@ -246,6 +238,47 @@ def main():
 
     for net_event in net_result["suspicious_events"]:
         report_suspicious_network_event(net_event, logger)
+
+    return processes, resource_monitor, baseline_engine, tree_analyzer, network_monitor, process_tree
+
+
+def main():
+    logger = setup_logger()
+
+    # Help information
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print(
+            "\nEndpoint Monitor - Host Intrusion Detection & Application Control System (Phase 6 Release)\n\n"
+            "Usage:\n"
+            "    python src/main.py [OPTIONS]\n\n"
+            "Options:\n"
+            "    --ui                Launch graphical desktop dashboard (native Tkinter)\n"
+            "    --cli, --dashboard  Launch interactive terminal console dashboard\n"
+            "    --scan              Execute a single-pass system security audit snapshot\n"
+            "    --continuous, -c    Execute continuous real-time monitoring loop\n"
+            "    --help, -h          Show this help message and exit\n"
+        )
+        return
+
+    # Mode 1: Graphical Desktop Dashboard (default when display is available or --ui)
+    if "--ui" in sys.argv or (len(sys.argv) == 1 and is_gui_available()):
+        if not is_gui_available():
+            print("Error: Graphical display not available. Use --cli or --continuous instead.")
+            sys.exit(1)
+        print("Launching Desktop Security Dashboard UI...")
+        engine = MonitoringEngine()
+        app = SecurityDashboardApp(engine=engine)
+        app.run()
+        return
+
+    # Mode 2: Interactive Terminal Console Dashboard
+    if "--cli" in sys.argv or "--dashboard" in sys.argv:
+        engine = MonitoringEngine()
+        run_cli_loop(engine)
+        return
+
+    # Mode 3 & 4: Command-Line Single Scan or Continuous Loop
+    processes, resource_monitor, baseline_engine, tree_analyzer, network_monitor, process_tree = run_single_scan(logger)
 
     # Optional continuous monitoring mode
     if "--continuous" in sys.argv or "-c" in sys.argv:
@@ -279,7 +312,6 @@ def main():
 
                     anomaly_result = baseline_engine.analyze_event(event)
                     event.metadata["baseline_anomaly"] = anomaly_result
-
                     baseline_engine.collect_event(event)
 
                     if event.indicators:
@@ -294,74 +326,11 @@ def main():
                     process_tree=process_tree,
                     new_only=True,
                 )
-                for net_event in net_cycle["suspicious_events"]:
+                for net_event in net_cycle.get("suspicious_events", []):
                     report_suspicious_network_event(net_event, logger)
 
                 previous_processes = current_processes
                 baseline_engine.save_baseline()
-
-        except KeyboardInterrupt:
-            print("\nEndpoint Security Monitor stopped cleanly.")
-            logger.info("Endpoint Security Monitor stopped cleanly by user.")
-
-    # Optional continuous monitoring mode
-    if "--continuous" in sys.argv or "-c" in sys.argv:
-        print(
-            f"\nEntering continuous monitoring mode "
-            f"(Interval: {resource_monitor.check_interval}s, Press Ctrl+C to stop)..."
-        )
-        logger.info("Entering continuous monitoring mode.")
-        previous_processes = processes
-
-        try:
-            while True:
-                time.sleep(resource_monitor.check_interval)
-
-                # Periodic resource monitoring check
-                resource_monitor.check_resources()
-
-                # Periodic process monitoring check for newly launched processes
-                current_processes = get_running_processes()
-                new_processes = get_new_processes(previous_processes, current_processes)
-
-                for process in new_processes:
-                    command_line = process.get("cmdline")
-                    indicators = detect_command_indicators(command_line)
-                    risk_result = calculate_risk(indicators, process)
-
-                    score = risk_result["score"]
-                    level = risk_result["level"]
-                    reasons = risk_result["reasons"]
-
-                    if indicators:
-                        message = (
-                            f"Suspicious process detected | "
-                            f"PID: {process.get('pid')} | "
-                            f"Process: {process.get('name')} | "
-                            f"Parent: {process.get('parent_name')} | "
-                            f"Risk: {level} | "
-                            f"Score: {score}"
-                        )
-
-                        print("\n" + "=" * 60)
-                        print(message)
-
-                        print("Indicators:")
-                        for indicator in indicators:
-                            print(f"  - {indicator}")
-
-                        print("Reasons:")
-                        for reason in reasons:
-                            print(f"  - {reason}")
-
-                        print("=" * 60)
-
-                        logger.warning(message)
-
-                        for reason in reasons:
-                            logger.warning(f"Reason: {reason}")
-
-                previous_processes = current_processes
 
         except KeyboardInterrupt:
             print("\nEndpoint Security Monitor stopped cleanly.")

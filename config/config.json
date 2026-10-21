@@ -237,7 +237,17 @@
       "default_timeout_seconds": 30,
       "max_output_bytes": 65536,
       "allowed_working_directories": []
+    },
+    "windows_enforcement": {
+      "enabled": false,
+      "channels": [
+        "Microsoft-Windows-CodeIntegrity/Operational",
+        "Microsoft-Windows-AppLocker/EXE and DLL"
+      ],
+      "poll_interval_seconds": 5.0,
+      "max_events_per_query": 50,
+      "correlate_with_processes": true,
+      "alert_on_blocks": true
     }
   }
 }
-
