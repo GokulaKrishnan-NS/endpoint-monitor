@@ -23,6 +23,16 @@ def render_terminal_dashboard(engine: MonitoringEngine) -> str:
     alerts = snap["alert_counts"]
     resources = snap.get("latest_resources", {})
     ce = snap.get("controlled_execution", {})
+    telemetry = snap.get("process_telemetry", {}) or {}
+
+    if not telemetry.get("enabled"):
+        telemetry_state = "Disabled"
+    elif telemetry.get("status") == "AVAILABLE":
+        telemetry_state = f"Active (records: {telemetry.get('records_collected', 0)})"
+    else:
+        telemetry_state = (
+            f"Unavailable ({telemetry.get('unavailable_reason') or 'unknown reason'}) - polling only"
+        )
 
     cpu_p = resources.get("cpu", {}).get("percent")
     mem_p = resources.get("memory", {}).get("percent")
@@ -36,6 +46,7 @@ def render_terminal_dashboard(engine: MonitoringEngine) -> str:
         f" Engine Status   : {status:<16} Observed Processes : {proc_count}",
         f" Critical Alerts : {alerts.get('HIGH', 0):<16} Total Events        : {alerts.get('TOTAL', 0)}",
         f" Execution Gate  : Dry-Run={ce.get('dry_run', True)} | Active-Execution={ce.get('allow_active_execution', False)}",
+        f" Proc Telemetry : {telemetry_state}",
         "-" * 78,
         " [*] SYSTEM RESOURCES:",
         f"   CPU Usage     : {format_percent(cpu_p):<12} Memory Usage : {format_percent(mem_p)} ({mem_str})",
@@ -84,6 +95,12 @@ def run_cli_loop(engine: MonitoringEngine, interval: float = 3.0) -> None:
         while True:
             # Clear terminal screen (cross-platform)
             os.system("cls" if os.name == "nt" else "clear")
+
+            # Consume the real-time notification queue (bounded, non-blocking).
+            # The dashboard itself is rendered from the engine snapshots, so
+            # draining the queue never duplicates an entry.
+            engine.poll_new_events(max_items=200)
+
             print(render_terminal_dashboard(engine))
             print("\nPress Ctrl+C to exit dashboard.")
             time.sleep(interval)

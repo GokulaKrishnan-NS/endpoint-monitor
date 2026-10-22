@@ -3,6 +3,7 @@ INDICATOR_SCORES = {
     "command_chaining": 2,
     "download_and_execute": 5,
     "hidden_execution": 3,
+    "dynamic_code_execution": 4,
     "suspicious_process_lineage": 4,
     "multi_level_shell_chain": 5,
     "shell_spawning_shell": 2,

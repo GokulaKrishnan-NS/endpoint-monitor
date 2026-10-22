@@ -23,7 +23,12 @@ except ImportError:
     TKINTER_AVAILABLE = False
 
 from src.execution.service import redact_command_line, redact_string
-from src.models.execution_request import ExecutionRequest
+from src.models.execution_request import (
+    DecisionStatus,
+    EnforcementStatus,
+    ExecutionRequest,
+    OperationType,
+)
 from src.ui.adapter import (
     SEVERITY_COLORS,
     adapt_event_row,
@@ -38,6 +43,7 @@ from src.ui.adapter import (
     get_severity_color,
 )
 from src.ui.engine import MonitoringEngine, MonitoringEngineStatus
+from src.ui.table_sync import sync_tree_rows
 
 
 logger = logging.getLogger("endpoint_monitor")
@@ -91,6 +97,10 @@ class SecurityDashboardApp:
         self.filter_event_sev_var = tk.StringVar(value="ALL")
         self.status_text_var = tk.StringVar(value="Engine: Initializing...")
         self.auto_refresh_var = tk.BooleanVar(value=True)
+
+        # Real-time event delivery state
+        self._new_event_count = 0
+        self._last_new_event: Optional[Any] = None
 
         # Style configuration
         self._setup_styles()
@@ -207,6 +217,16 @@ class SecurityDashboardApp:
         self.notebook.add(self.tab_execution, text=" 🔒 Controlled Execution ")
         self._build_execution_tab()
 
+        # Bind tab change event to trigger immediate view refresh
+        self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+
+    def _on_tab_changed(self, event: Any = None) -> None:
+        """Immediately refresh the newly selected tab view upon switching."""
+        try:
+            self._update_all_views()
+        except Exception as e:
+            logger.warning(f"Tab switch update failed: {e}", exc_info=True)
+
     def _build_status_bar(self) -> None:
         """Bottom operational status line."""
         status_bar = ttk.Frame(self.root, relief="sunken", padding="5 3 5 3")
@@ -303,6 +323,14 @@ class SecurityDashboardApp:
             foreground="#333333",
         )
         self.lbl_os_status.pack(anchor=tk.W)
+
+        self.lbl_telemetry_status = ttk.Label(
+            os_box,
+            text="• Process Creation Telemetry (4688): Disabled",
+            font=("Segoe UI", 9),
+            foreground="#333333",
+        )
+        self.lbl_telemetry_status.pack(anchor=tk.W)
 
         # Bottom: Recent Critical Alerts Table
         recent_box = ttk.LabelFrame(self.tab_dashboard, text=" Recent Critical Alerts ", padding=8)
@@ -422,7 +450,15 @@ class SecurityDashboardApp:
         cb_source = ttk.Combobox(
             filter_bar,
             textvariable=self.filter_event_source_var,
-            values=["ALL", "process_monitor", "network_monitor", "file_monitor", "windows_enforcement", "execution_service"],
+            values=[
+                "ALL",
+                "process_monitor",
+                "network_monitor",
+                "file_monitor",
+                "windows_enforcement",
+                "windows_process_telemetry",
+                "execution_service",
+            ],
             state="readonly",
             width=18,
         )
@@ -581,15 +617,75 @@ class SecurityDashboardApp:
     # -------------------------------------------------------------------------
 
     def _build_execution_tab(self) -> None:
-        """Interactive test harness for ControlledExecutionService evaluation."""
-        # Top: Request Input Form
-        input_frame = ttk.LabelFrame(self.tab_execution, text=" Submit Execution Request (Pre-Launch Risk Evaluation) ", padding=10)
-        input_frame.pack(side=tk.TOP, fill=tk.X, pady=(0, 8))
+        """Enforcement & Approvals Console with real approval actions and diagnostics."""
+        # Section 1: Privileged Service & OS Enforcement Diagnostics Card
+        health_box = ttk.LabelFrame(self.tab_execution, text=" Privileged Service & OS Enforcement Diagnostics ", padding=8)
+        health_box.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
+
+        self.lbl_svc_health_summary = ttk.Label(
+            health_box,
+            text="• Service Health: Initializing... | Policy Engine: Active (v1.0.0) | Approval Queue: 0/100\n• OS Kernel Enforcement: Not Installed (Phase 1 Foundation - No Driver) | Mode: Simulation & Monitoring",
+            font=("Segoe UI", 9),
+            foreground="#0d6efd",
+        )
+        self.lbl_svc_health_summary.pack(anchor=tk.W)
+
+        # Section 2: Pending Approvals Table (Operator Authorization Queue)
+        appr_frame = ttk.LabelFrame(self.tab_execution, text=" Pending Approval Requests (Operator Authorization Required) ", padding=8)
+        appr_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=(0, 6))
+
+        a_cols = ("appr_id", "op_type", "target", "pid", "score", "level", "expires", "reasons")
+        self.tree_pending_approvals = ttk.Treeview(appr_frame, columns=a_cols, show="headings", height=4)
+        self.tree_pending_approvals.heading("appr_id", text="Approval ID")
+        self.tree_pending_approvals.heading("op_type", text="Type")
+        self.tree_pending_approvals.heading("target", text="Target / Remote")
+        self.tree_pending_approvals.heading("pid", text="PID")
+        self.tree_pending_approvals.heading("score", text="Score")
+        self.tree_pending_approvals.heading("level", text="Risk")
+        self.tree_pending_approvals.heading("expires", text="Expires In")
+        self.tree_pending_approvals.heading("reasons", text="Detection Reasons")
+
+        self.tree_pending_approvals.column("appr_id", width=140, anchor=tk.W)
+        self.tree_pending_approvals.column("op_type", width=65, anchor=tk.CENTER)
+        self.tree_pending_approvals.column("target", width=170, anchor=tk.W)
+        self.tree_pending_approvals.column("pid", width=60, anchor=tk.CENTER)
+        self.tree_pending_approvals.column("score", width=50, anchor=tk.CENTER)
+        self.tree_pending_approvals.column("level", width=70, anchor=tk.CENTER)
+        self.tree_pending_approvals.column("expires", width=75, anchor=tk.CENTER)
+        self.tree_pending_approvals.column("reasons", width=360, anchor=tk.W)
+
+        self.tree_pending_approvals.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        sb_appr = ttk.Scrollbar(appr_frame, orient=tk.VERTICAL, command=self.tree_pending_approvals.yview)
+        self.tree_pending_approvals.configure(yscrollcommand=sb_appr.set)
+        sb_appr.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Action Buttons Row
+        btn_bar = ttk.Frame(self.tab_execution)
+        btn_bar.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
+
+        self.btn_approve = ttk.Button(btn_bar, text="✅ Approve Selected", command=self._action_approve_selected)
+        self.btn_approve.pack(side=tk.LEFT, padx=(0, 6))
+
+        self.btn_deny = ttk.Button(btn_bar, text="❌ Deny Selected", command=self._action_deny_selected)
+        self.btn_deny.pack(side=tk.LEFT, padx=6)
+
+        self.btn_retry_approved = ttk.Button(btn_bar, text="🚀 Retry Approved Launch", command=self._action_retry_approved)
+        self.btn_retry_approved.pack(side=tk.LEFT, padx=6)
+
+        self.btn_refresh_approvals = ttk.Button(btn_bar, text="🔄 Refresh Queue", command=self._refresh_approvals_table)
+        self.btn_refresh_approvals.pack(side=tk.LEFT, padx=6)
+
+        self.lbl_approval_action_status = ttk.Label(btn_bar, text="", font=("Segoe UI", 9))
+        self.lbl_approval_action_status.pack(side=tk.LEFT, padx=10)
+
+        # Section 3: Request Submission Form
+        input_frame = ttk.LabelFrame(self.tab_execution, text=" Submit Operation Request (Pre-Execution Policy Gate) ", padding=8)
+        input_frame.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
 
         row1 = ttk.Frame(input_frame)
         row1.pack(fill=tk.X, pady=2)
-        ttk.Label(row1, text="Executable:", width=14).pack(side=tk.LEFT)
-        self.ent_exec_target = ttk.Entry(row1, width=45)
+        ttk.Label(row1, text="Executable / Target:", width=18).pack(side=tk.LEFT)
+        self.ent_exec_target = ttk.Entry(row1, width=42)
         self.ent_exec_target.insert(0, "powershell.exe")
         self.ent_exec_target.pack(side=tk.LEFT, padx=5)
 
@@ -600,8 +696,8 @@ class SecurityDashboardApp:
 
         row2 = ttk.Frame(input_frame)
         row2.pack(fill=tk.X, pady=2)
-        ttk.Label(row2, text="Arguments:", width=14).pack(side=tk.LEFT)
-        self.ent_exec_args = ttk.Entry(row2, width=65)
+        ttk.Label(row2, text="Arguments / Remote:", width=18).pack(side=tk.LEFT)
+        self.ent_exec_args = ttk.Entry(row2, width=60)
         self.ent_exec_args.insert(0, "-NoProfile -Command whoami")
         self.ent_exec_args.pack(side=tk.LEFT, padx=5)
 
@@ -609,8 +705,8 @@ class SecurityDashboardApp:
         btn_eval.pack(side=tk.LEFT, padx=10)
 
         # Evaluated Decision Card
-        self.exec_decision_card = ttk.LabelFrame(self.tab_execution, text=" Policy Gate Decision ", padding=10)
-        self.exec_decision_card.pack(side=tk.TOP, fill=tk.X, pady=4)
+        self.exec_decision_card = ttk.LabelFrame(self.tab_execution, text=" Policy Gate Decision ", padding=8)
+        self.exec_decision_card.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
 
         self.lbl_exec_decision_res = ttk.Label(
             self.exec_decision_card,
@@ -620,12 +716,12 @@ class SecurityDashboardApp:
         )
         self.lbl_exec_decision_res.pack(anchor=tk.W)
 
-        # Bottom: Historical Execution Records Table
-        hist_frame = ttk.LabelFrame(self.tab_execution, text=" Recent Controlled Execution Requests ", padding=8)
-        hist_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True, pady=(6, 0))
+        # Section 4: Historical Execution & Decision Records Table
+        hist_frame = ttk.LabelFrame(self.tab_execution, text=" Policy Decision & Enforcement History ", padding=8)
+        hist_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
         cols = ("req_id", "target", "decision", "status", "score", "reasons")
-        self.tree_exec_history = ttk.Treeview(hist_frame, columns=cols, show="headings", height=8)
+        self.tree_exec_history = ttk.Treeview(hist_frame, columns=cols, show="headings", height=5)
         self.tree_exec_history.heading("req_id", text="Request ID")
         self.tree_exec_history.heading("target", text="Target Executable")
         self.tree_exec_history.heading("decision", text="Policy Decision")
@@ -651,21 +747,43 @@ class SecurityDashboardApp:
 
     def _ui_poll_cycle(self) -> None:
         """Periodic UI update triggered by root.after."""
-        if self.auto_refresh_var.get() and self.engine.is_running():
-            self._update_all_views()
+        try:
+            # Consume the real-time notification queue (bounded, never
+            # blocking).  The queue is only a "something changed" signal:
+            # the tables are rendered from the engine snapshots, so an
+            # event is never displayed twice.
+            new_events = self.engine.poll_new_events(max_items=100)
+            if new_events:
+                self._new_event_count += len(new_events)
+                self._last_new_event = new_events[-1]
+
+            if self.auto_refresh_var.get() and self.engine.is_running():
+                self._update_all_views()
+
+        except Exception as e:
+            logger.warning(f"UI refresh cycle failed: {e}", exc_info=True)
 
         # Schedule next poll cycle in 1000ms
         self.root.after(1000, self._ui_poll_cycle)
 
     def _update_all_views(self) -> None:
         """Fetch engine snapshots and refresh UI components."""
+        try:
+            self._render_all_views()
+        except Exception as e:
+            logger.warning(f"Dashboard refresh failed: {e}", exc_info=True)
+
+    def _render_all_views(self) -> None:
+        """Render every dashboard view from the current engine snapshot."""
         snap = self.engine.get_state_snapshot()
 
         # 1. Update Header Buttons and Status Line
         curr_status = snap["status"]
+        new_suffix = f" | New: {self._new_event_count}" if self._new_event_count else ""
         self.status_text_var.set(
             f"Engine: {curr_status} | Observed PIDs: {snap['process_count']} | "
-            f"High Alerts: {snap['alert_counts']['HIGH']} | Updated: {time.strftime('%H:%M:%S')}"
+            f"High Alerts: {snap['alert_counts']['HIGH']}{new_suffix} | "
+            f"Updated: {time.strftime('%H:%M:%S')}"
         )
 
         # 2. Update Dashboard Overview Cards
@@ -673,11 +791,48 @@ class SecurityDashboardApp:
         self.lbl_card_high_alerts.config(text=str(snap["alert_counts"]["HIGH"]))
         self.lbl_card_total_events.config(text=str(snap["alert_counts"]["TOTAL"]))
 
+        # 2b. Report the real state of the Windows process creation telemetry
+        telemetry = snap.get("process_telemetry", {}) or {}
+        if not telemetry.get("enabled"):
+            telemetry_text = "• Process Creation Telemetry (4688): Disabled"
+            telemetry_color = "#6c757d"
+        elif telemetry.get("status") == "AVAILABLE":
+            telemetry_text = (
+                f"• Process Creation Telemetry (4688): Active | "
+                f"Records: {telemetry.get('records_collected', 0)}"
+            )
+            telemetry_color = "#198754"
+        else:
+            telemetry_text = (
+                f"• Process Creation Telemetry (4688): Unavailable "
+                f"({telemetry.get('unavailable_reason') or 'unknown'}) - polling only"
+            )
+            telemetry_color = "#dc3545"
+        self.lbl_telemetry_status.config(text=telemetry_text, foreground=telemetry_color)
+
         ce_info = snap["controlled_execution"]
-        if ce_info.get("dry_run"):
+        pending_count = snap.get("pending_approvals_count", 0)
+        if pending_count > 0:
+            self.lbl_card_gate.config(text=f"PENDING ({pending_count})", foreground="#fd7e14")
+        elif ce_info.get("dry_run"):
             self.lbl_card_gate.config(text="DRY-RUN", foreground="#198754")
         else:
             self.lbl_card_gate.config(text="ACTIVE", foreground="#dc3545")
+
+        # Update Service Health diagnostics banner if widget exists
+        if hasattr(self, "lbl_svc_health_summary"):
+            svc_health = snap.get("service_health", {})
+            overall = svc_health.get("overall_status", "UNKNOWN")
+            pol_status = svc_health.get("policy_engine", {}).get("status", "HEALTHY")
+            ipc_status = svc_health.get("ipc_service", {}).get("status", "READY")
+            appr_q = svc_health.get("approval_queue", {})
+            q_info = f"{appr_q.get('pending_count', 0)}/{appr_q.get('capacity', 100)}"
+            diag_text = (
+                f"• Privileged Service: {overall} | Policy Engine: {pol_status} (v1.0.0) | "
+                f"Approval Queue: {q_info} | IPC: {ipc_status}\n"
+                f"• OS Kernel Enforcement: Not Installed (Phase 1 Foundation - No Driver) | Mode: Simulation & Monitoring"
+            )
+            self.lbl_svc_health_summary.config(text=diag_text)
 
         # 3. Update Resource Progress Bars
         res = snap.get("latest_resources", {})
@@ -696,32 +851,40 @@ class SecurityDashboardApp:
 
         # 4. Update Tab Views based on which tab is selected
         selected_tab = self.notebook.tab(self.notebook.select(), "text").strip()
-        if "Overview" in selected_tab:
-            self._refresh_recent_alerts_table()
-        elif "Process" in selected_tab:
-            self._refresh_process_tree()
-        elif "Alerts" in selected_tab:
-            self._refresh_alerts_tree()
-        elif "Resources" in selected_tab:
-            self._refresh_resources_detailed(res)
-        elif "Network" in selected_tab:
-            self._refresh_activity_tables()
-        elif "Controlled" in selected_tab:
-            self._refresh_execution_history_table()
+        try:
+            if "Overview" in selected_tab:
+                self._refresh_recent_alerts_table()
+            elif "Process" in selected_tab:
+                self._refresh_process_tree()
+            elif "Alerts" in selected_tab:
+                self._refresh_alerts_tree()
+            elif "Resources" in selected_tab:
+                self._refresh_resources_detailed(res)
+            elif "Network" in selected_tab:
+                self._refresh_activity_tables()
+            elif "Controlled" in selected_tab:
+                self._refresh_approvals_table()
+                self._refresh_execution_history_table()
+        except Exception as e:
+            logger.warning(f"Error rendering tab '{selected_tab}': {e}", exc_info=True)
 
     def _refresh_recent_alerts_table(self) -> None:
         """Populate recent alerts on overview tab."""
         alerts = self.engine.get_alerts_snapshot()[-6:]
-        self.tree_recent_alerts.delete(*self.tree_recent_alerts.get_children())
+        rows = []
         for a in reversed(alerts):
             time_str = format_timestamp(a.timestamp)
             target = a.process_name or a.file_path or "N/A"
             reasons = "; ".join(a.risk_reasons) if a.risk_reasons else "None"
-            self.tree_recent_alerts.insert(
-                "",
-                tk.END,
-                values=(time_str, a.severity, a.source, target, a.risk_score, reasons),
+            rows.append(
+                (time_str, a.severity, a.source, target, a.risk_score, reasons)
             )
+
+        sync_tree_rows(
+            self.tree_recent_alerts,
+            rows,
+            key_fn=lambda row: (row[0], row[2], row[3]),
+        )
 
     def _refresh_process_tree(self) -> None:
         """Filter, sort, and render process explorer tree."""
@@ -739,22 +902,22 @@ class SecurityDashboardApp:
             reverse=True,
         )
 
-        self.tree_processes.delete(*self.tree_processes.get_children())
-        for r in rows:
-            self.tree_processes.insert(
-                "",
-                tk.END,
-                values=(
-                    r["pid"],
-                    r["ppid"],
-                    r["name"],
-                    r["path"],
-                    r["risk_score"],
-                    r["risk_level"],
-                    r["username"],
-                    r["reasons_str"],
-                ),
+        table_rows = [
+            (
+                r["pid"],
+                r["ppid"],
+                r["name"],
+                r["path"],
+                r["risk_score"],
+                r["risk_level"],
+                r["username"],
+                r["reasons_str"],
             )
+            for r in rows
+        ]
+
+        # The PID is the stable identity of a process row
+        sync_tree_rows(self.tree_processes, table_rows, key_index=0)
 
         self.lbl_proc_filter_count.config(text=f"Showing {len(rows)} of {len(procs)} processes")
 
@@ -774,21 +937,24 @@ class SecurityDashboardApp:
             reverse=True,
         )
 
-        self.tree_alerts.delete(*self.tree_alerts.get_children())
-        for r in rows[:200]:  # Cap rendering at 200 rows for smoothness
-            self.tree_alerts.insert(
-                "",
-                tk.END,
-                values=(
-                    r["time_str"],
-                    r["severity"],
-                    r["source"],
-                    r["event_type"],
-                    r["proc_info_str"],
-                    r["risk_score"],
-                    r["reasons_str"],
-                ),
+        table_rows = [
+            (
+                r["time_str"],
+                r["severity"],
+                r["source"],
+                r["event_type"],
+                r["proc_info_str"],
+                r["risk_score"],
+                r["reasons_str"],
             )
+            for r in rows[:200]  # Cap rendering at 200 rows for smoothness
+        ]
+
+        sync_tree_rows(
+            self.tree_alerts,
+            table_rows,
+            key_fn=lambda row: (row[0], row[2], row[3], row[4]),
+        )
 
     def _refresh_resources_detailed(self, res: Dict[str, Any]) -> None:
         """Render detailed resource subsystem statistics."""
@@ -834,13 +1000,11 @@ class SecurityDashboardApp:
     def _refresh_activity_tables(self) -> None:
         """Render network connections and file activity."""
         net_events = self.engine.get_network_events_snapshot()
-        self.tree_network.delete(*self.tree_network.get_children())
+        net_rows = []
         for ne in net_events[-40:]:
             r = adapt_network_event_row(ne)
-            self.tree_network.insert(
-                "",
-                tk.END,
-                values=(
+            net_rows.append(
+                (
                     r["time_str"],
                     r["pid"],
                     r["process_name"],
@@ -848,37 +1012,97 @@ class SecurityDashboardApp:
                     r["local_address"],
                     r["remote_address"],
                     r["status"],
-                ),
+                )
             )
+        sync_tree_rows(
+            self.tree_network,
+            net_rows,
+            key_fn=lambda row: (row[0], row[1], row[5], row[6]),
+        )
 
         file_events = self.engine.get_file_events_snapshot()
-        self.tree_files.delete(*self.tree_files.get_children())
+        file_rows = []
         for fe in file_events[-40:]:
             r = adapt_file_event_row(fe)
-            self.tree_files.insert(
-                "",
-                tk.END,
-                values=(r["time_str"], r["action"], r["file_path"], r["dest_path"], r["severity"]),
+            file_rows.append(
+                (r["time_str"], r["action"], r["file_path"], r["dest_path"], r["severity"])
             )
+        sync_tree_rows(
+            self.tree_files,
+            file_rows,
+            key_fn=lambda row: (row[0], row[1], row[2]),
+        )
+
+    def _refresh_approvals_table(self) -> None:
+        """Render active pending approval requests from engine and sync health summary."""
+        if not hasattr(self, "tree_pending_approvals"):
+            return
+
+        # Update service health diagnostics banner
+        try:
+            health = self.engine.get_service_health()
+            overall = health.get("overall_status", "PARTIALLY_ACTIVE")
+            driver_st = health.get("native_driver", {}).get("available", False)
+            wfp_st = health.get("wfp_enforcement", {}).get("session_open", False)
+            queue_info = health.get("approval_queue", {})
+            q_pend = queue_info.get("pending_count", 0)
+            q_cap = queue_info.get("capacity", 100)
+            q_sat = " [SATURATED!]" if queue_info.get("saturated") else ""
+
+            driver_desc = "Active (Driver Device Open)" if driver_st else "Not Loaded (Prerequisite: WDK/Signing)"
+            wfp_desc = "Active (ALE Connect Layer Verified)" if wfp_st else "Inactive"
+            if hasattr(self, "lbl_svc_health_summary"):
+                self.lbl_svc_health_summary.config(
+                    text=(
+                        f"• Protection Mode: {overall} | Controlled Launcher: ACTIVE | Approval Queue: {q_pend}/{q_cap}{q_sat}\n"
+                        f"• Native Kernel Driver: {driver_desc} | WFP ALE Filtering: {wfp_desc} | Policy: Synced (v1.0.0)"
+                    ),
+                    foreground="#198754" if overall == "FULLY_ACTIVE" else ("#0d6efd" if overall == "PARTIALLY_ACTIVE" else "#dc3545"),
+                )
+        except Exception as e:
+            logger.debug(f"Error updating health summary: {e}")
+
+        pending = self.engine.get_pending_approvals()
+        now = time.time()
+        rows = []
+        for req in pending:
+            appr_id = req.get("approval_id", "")
+            op_type = req.get("operation_type", "process")
+            target = req.get("executable") or f"{req.get('remote_ip')}:{req.get('remote_port')}"
+            pid = str(req.get("pid") or "N/A")
+            score = req.get("risk_score", 0)
+            level = req.get("risk_level", "MEDIUM")
+            expires_in = max(0, int(req.get("expires_at", now) - now))
+            reasons = "; ".join(req.get("reasons", [])) if req.get("reasons") else "None"
+            rows.append((appr_id, op_type, target, pid, score, level, f"{expires_in}s", reasons))
+
+        sync_tree_rows(
+            self.tree_pending_approvals,
+            rows,
+            key_fn=lambda row: (row[0],),
+        )
 
     def _refresh_execution_history_table(self) -> None:
         """Render controlled execution submission history."""
         records = self.engine.get_execution_records_snapshot()
-        self.tree_exec_history.delete(*self.tree_exec_history.get_children())
+        table_rows = []
         for rec in reversed(records[-40:]):
             reasons_str = "; ".join(rec.get("reasons", [])) if rec.get("reasons") else "None"
-            self.tree_exec_history.insert(
-                "",
-                tk.END,
-                values=(
+            table_rows.append(
+                (
                     rec.get("request_id"),
                     rec.get("executable"),
                     rec.get("decision"),
                     rec.get("status"),
                     rec.get("risk_score"),
                     reasons_str,
-                ),
+                )
             )
+        sync_tree_rows(
+            self.tree_exec_history,
+            table_rows,
+            key_fn=lambda row: (row[0],),
+        )
 
     # -------------------------------------------------------------------------
     # Event Handlers & User Actions
@@ -970,6 +1194,71 @@ class SecurityDashboardApp:
                 self.txt_alert_inspector.insert(tk.END, payload)
                 break
 
+    def _action_approve_selected(self) -> None:
+        """Approve selected pending authorization request."""
+        selected = self.tree_pending_approvals.selection()
+        if not selected:
+            messagebox.showinfo("Select Request", "Please select a pending approval request from the table.")
+            return
+        item = self.tree_pending_approvals.item(selected[0])
+        appr_id = item["values"][0]
+        success, msg = self.engine.approve_request(str(appr_id), approver="gui_operator", reason="Approved via GUI console")
+        if success:
+            self.lbl_approval_action_status.config(text=f"✅ {msg}", foreground="#198754")
+        else:
+            self.lbl_approval_action_status.config(text=f"❌ {msg}", foreground="#dc3545")
+        self._refresh_approvals_table()
+        self._refresh_execution_history_table()
+
+    def _action_deny_selected(self) -> None:
+        """Deny selected pending authorization request."""
+        selected = self.tree_pending_approvals.selection()
+        if not selected:
+            messagebox.showinfo("Select Request", "Please select a pending approval request from the table.")
+            return
+        item = self.tree_pending_approvals.item(selected[0])
+        appr_id = item["values"][0]
+        success, msg = self.engine.deny_request(str(appr_id), approver="gui_operator", reason="Denied via GUI console")
+        if success:
+            self.lbl_approval_action_status.config(text=f"✅ {msg}", foreground="#198754")
+        else:
+            self.lbl_approval_action_status.config(text=f"❌ {msg}", foreground="#dc3545")
+        self._refresh_approvals_table()
+        self._refresh_execution_history_table()
+
+    def _action_retry_approved(self) -> None:
+        """Retry execution of an approved request using its single-use token."""
+        selected = self.tree_pending_approvals.selection()
+        appr_id = None
+        if selected:
+            item = self.tree_pending_approvals.item(selected[0])
+            appr_id = str(item["values"][0])
+        else:
+            # Check if there is an approved request ID from recent decisions
+            history = self.engine.get_decision_history()
+            for h in reversed(history):
+                if h.get("approval_id") and h.get("enforcement_status") == "APPROVED":
+                    appr_id = h.get("approval_id")
+                    break
+
+        if not appr_id:
+            messagebox.showinfo("Retry Approved Request", "Please select or submit an approved request to retry.")
+            return
+
+        result = self.engine.retry_approved_request(appr_id)
+        if result.executed:
+            self.lbl_approval_action_status.config(
+                text=f"🚀 Launch succeeded (PID: {result.pid}, Enforcement: {result.enforcement_status})",
+                foreground="#198754",
+            )
+        else:
+            self.lbl_approval_action_status.config(
+                text=f"⚠️ Launch not executed: {result.error} (Enforcement: {result.enforcement_status})",
+                foreground="#fd7e14" if "dry_run" in (result.error or "").lower() else "#dc3545",
+            )
+        self._refresh_approvals_table()
+        self._refresh_execution_history_table()
+
     def _action_evaluate_request(self) -> None:
         """Submit interactive ExecutionRequest through the execution service."""
         target = self.ent_exec_target.get().strip()
@@ -989,6 +1278,7 @@ class SecurityDashboardApp:
             ppid_val = int(ppid_str)
 
         req = ExecutionRequest(
+            operation_type=OperationType.PROCESS,
             executable=target,
             command_line=cmdline,
             parent_pid=ppid_val,
@@ -997,15 +1287,17 @@ class SecurityDashboardApp:
         result = self.engine.submit_execution_request(req)
         dec = result.decision
 
+        appr_suffix = f" | Approval ID: {dec.approval_id}" if (dec and dec.approval_id) else ""
         dec_text = (
-            f"Decision: {dec.decision if dec else 'REJECTED'} | "
+            f"Decision: {dec.decision if dec else 'REJECTED'}{appr_suffix} | "
             f"Status: {result.status} | "
             f"Risk Score: {dec.risk_score if dec else 'N/A'} ({dec.risk_level if dec else 'N/A'})\n"
-            f"Executed: {result.executed} (Dry-Run Safety Active)\n"
+            f"Policy Provenance: {dec.provenance if dec else 'N/A'} | Executed: {result.executed} (Dry-Run Safety Active)\n"
             f"Policy Reasons: {'; '.join(dec.reasons) if dec and dec.reasons else 'Approved by policy'}\n"
-            f"Error / Gate Note: {result.error or 'None'}"
+            f"Enforcement Status: {dec.enforcement_status if dec else 'NOT_ENFORCED'} | Note: {result.error or 'None'}"
         )
         self.lbl_exec_decision_res.config(text=dec_text)
+        self._refresh_approvals_table()
         self._refresh_execution_history_table()
 
     def on_close(self) -> None:

@@ -17,7 +17,9 @@ from typing import Any, Dict, List, Optional, Set
 from src.execution.config import load_execution_config
 from src.execution.policy import ExecutionPolicy
 from src.models.execution_request import (
+    DecisionProvenance,
     DecisionStatus,
+    EnforcementStatus,
     ExecutionDecision,
     ExecutionRequest,
 )
@@ -41,6 +43,11 @@ class LaunchResult:
     error: Optional[str] = None
     execution_time_seconds: float = 0.0
     timestamp: float = field(default_factory=time.time)
+    enforcement_status: str = EnforcementStatus.NOT_ENFORCED
+
+    def __post_init__(self) -> None:
+        if self.enforcement_status == EnforcementStatus.NOT_ENFORCED and self.decision:
+            self.enforcement_status = getattr(self.decision, "enforcement_status", EnforcementStatus.NOT_ENFORCED)
 
     @property
     def truncated(self) -> bool:
@@ -76,6 +83,10 @@ class LaunchResult:
             error=data.get("error"),
             execution_time_seconds=data.get("execution_time_seconds", 0.0),
             timestamp=data.get("timestamp", time.time()),
+            enforcement_status=data.get(
+                "enforcement_status",
+                getattr(decision, "enforcement_status", EnforcementStatus.NOT_ENFORCED),
+            ),
         )
 
 
@@ -254,13 +265,27 @@ class ControlledLauncher:
         config: Optional[Dict[str, Any]] = None,
         config_path: str = "config/config.json",
         track_pids: bool = False,
+        approval_manager: Optional[Any] = None,
+        audit_logger: Optional[Any] = None,
+        service: Optional[Any] = None,
     ):
-        self.config: Dict[str, Any] = (
-            config if config is not None else load_execution_config(config_path)
-        )
-        self.policy: ExecutionPolicy = (
-            policy if policy is not None else ExecutionPolicy(config=self.config, config_path=config_path)
-        )
+        if service is not None:
+            self.service = service
+            self.config = getattr(service, "config", {})
+            self.policy = getattr(service, "policy", None) or ExecutionPolicy(config=self.config, config_path=config_path)
+            self.approval_manager = getattr(service, "approval_manager", None)
+            self.audit_logger = getattr(service, "audit_logger", None)
+        else:
+            self.service = None
+            self.config = (
+                config if config is not None else load_execution_config(config_path)
+            )
+            self.policy = (
+                policy if policy is not None else ExecutionPolicy(config=self.config, config_path=config_path)
+            )
+            self.approval_manager = approval_manager
+            self.audit_logger = audit_logger
+
         self.logger = logging.getLogger("endpoint_monitor")
         self.track_pids: bool = track_pids
         self.active_pids: Set[int] = set()
@@ -538,17 +563,104 @@ class ControlledLauncher:
         decision.dry_run = self.dry_run
         decision.executed = False
 
-        if decision.decision != DecisionStatus.ALLOW:
+        # Handle REQUIRE_APPROVAL workflow
+        if decision.decision == DecisionStatus.REQUIRE_APPROVAL:
+            approval_id = request.metadata.get("approval_id") if isinstance(request.metadata, dict) else None
+            approval_token = request.metadata.get("approval_token") if isinstance(request.metadata, dict) else None
+            if not approval_id:
+                approval_id = getattr(request, "approval_id", None)
+            if not approval_token:
+                approval_token = getattr(request, "approval_token", None)
+
+            if approval_id and approval_token and self.approval_manager:
+                # Controlled retry with approved token
+                consumed, err = self.approval_manager.consume_approval(
+                    approval_id=str(approval_id),
+                    single_use_token=str(approval_token),
+                    context={
+                        "executable": resolved_exe,
+                        "command_line": exact_args,
+                    },
+                )
+                if consumed:
+                    decision.decision = DecisionStatus.ALLOW
+                    decision.provenance = DecisionProvenance.APPROVAL_MANAGER
+                    decision.enforcement_status = EnforcementStatus.VERIFIED_ALLOWED
+                    self.logger.info(
+                        f"[CONTROLLED LAUNCHER] Approved token successfully consumed for request "
+                        f"{request.request_id} ({resolved_exe}). Proceeding to launch."
+                    )
+                else:
+                    decision.decision = DecisionStatus.BLOCK
+                    decision.provenance = DecisionProvenance.APPROVAL_MANAGER
+                    decision.enforcement_status = EnforcementStatus.VERIFIED_BLOCKED
+                    decision.error = f"Approval authorization rejected: {err}"
+                    decision.reasons.append(decision.error)
+                    self.logger.warning(
+                        f"[CONTROLLED LAUNCHER] Approval token rejection for {request.request_id}: {err}"
+                    )
+                    if self.audit_logger:
+                        self.audit_logger.record_decision(eval_request, decision)
+                    return LaunchResult(
+                        request_id=request.request_id,
+                        decision=decision,
+                        executed=False,
+                        error=decision.error,
+                        execution_time_seconds=time.time() - start_time,
+                        enforcement_status=EnforcementStatus.VERIFIED_BLOCKED,
+                    )
+            else:
+                # Initial attempt without token: queue request and deny launch pending approval
+                if self.approval_manager:
+                    try:
+                        appr_req = self.approval_manager.create_request(
+                            request=eval_request,
+                            risk_score=decision.risk_score,
+                            risk_level=decision.risk_level,
+                            reasons=decision.reasons,
+                        )
+                        decision.approval_id = appr_req.approval_id
+                        decision.expires_at = appr_req.expires_at
+                    except Exception as exc:
+                        self.logger.warning(f"Failed to queue approval request: {exc}")
+
+                decision.enforcement_status = EnforcementStatus.VERIFIED_BLOCKED
+                err_msg = "Execution requires approval; launch denied pending operator approval and retry"
+                decision.error = err_msg
+                self.logger.info(
+                    f"[CONTROLLED LAUNCHER] Request {request.request_id} for '{resolved_exe}' "
+                    f"DENIED pending approval (Approval ID: {decision.approval_id})."
+                )
+                if self.audit_logger:
+                    self.audit_logger.record_decision(
+                        eval_request,
+                        decision,
+                        approval_details={"approval_id": decision.approval_id} if decision.approval_id else None,
+                    )
+                return LaunchResult(
+                    request_id=request.request_id,
+                    decision=decision,
+                    executed=False,
+                    error=err_msg,
+                    execution_time_seconds=time.time() - start_time,
+                    enforcement_status=EnforcementStatus.VERIFIED_BLOCKED,
+                )
+
+        elif decision.decision != DecisionStatus.ALLOW:
+            decision.enforcement_status = EnforcementStatus.VERIFIED_BLOCKED
             self.logger.warning(
                 f"[CONTROLLED LAUNCHER] Execution request {request.request_id} for "
                 f"'{resolved_exe}' was BLOCKED by policy. Reasons: {decision.reasons}"
             )
+            if self.audit_logger:
+                self.audit_logger.record_decision(eval_request, decision)
             return LaunchResult(
                 request_id=request.request_id,
                 decision=decision,
                 executed=False,
                 error="Execution blocked by policy",
                 execution_time_seconds=time.time() - start_time,
+                enforcement_status=EnforcementStatus.VERIFIED_BLOCKED,
             )
 
         # Step 6: Trusted dual execution gates check
@@ -557,12 +669,16 @@ class ControlledLauncher:
             msg = "Active process execution suppressed: dry_run is True in trusted configuration"
             self.logger.info(f"[CONTROLLED LAUNCHER] {msg} for request {request.request_id}")
             decision.executed = False
+            decision.enforcement_status = EnforcementStatus.SIMULATED
+            if self.audit_logger:
+                self.audit_logger.record_decision(eval_request, decision)
             return LaunchResult(
                 request_id=request.request_id,
                 decision=decision,
                 executed=False,
                 error=msg,
                 execution_time_seconds=time.time() - start_time,
+                enforcement_status=EnforcementStatus.SIMULATED,
             )
 
         if not self.allow_active_execution:
@@ -572,12 +688,16 @@ class ControlledLauncher:
             )
             self.logger.warning(f"[CONTROLLED LAUNCHER] {msg} for request {request.request_id}")
             decision.executed = False
+            decision.enforcement_status = EnforcementStatus.SIMULATED
+            if self.audit_logger:
+                self.audit_logger.record_decision(eval_request, decision)
             return LaunchResult(
                 request_id=request.request_id,
                 decision=decision,
                 executed=False,
                 error=msg,
                 execution_time_seconds=time.time() - start_time,
+                enforcement_status=EnforcementStatus.SIMULATED,
             )
 
         # Step 7: Process Spawning via subprocess.Popen
@@ -599,12 +719,16 @@ class ControlledLauncher:
             err_msg = f"Failed to spawn process '{resolved_exe}': {exc}"
             self.logger.error(err_msg, exc_info=True)
             decision.executed = False
+            decision.enforcement_status = EnforcementStatus.FAILED_UNENFORCED
+            if self.audit_logger:
+                self.audit_logger.record_decision(eval_request, decision)
             return LaunchResult(
                 request_id=request.request_id,
                 decision=decision,
                 executed=False,
                 error=err_msg,
                 execution_time_seconds=time.time() - start_time,
+                enforcement_status=EnforcementStatus.FAILED_UNENFORCED,
             )
 
         # Process creation succeeded
@@ -613,6 +737,7 @@ class ControlledLauncher:
             self.active_pids.add(child_pid)
 
         decision.executed = True
+        decision.enforcement_status = EnforcementStatus.VERIFIED_ALLOWED
 
         stdout_buf: List[bytes] = []
         stderr_buf: List[bytes] = []
@@ -695,6 +820,9 @@ class ControlledLauncher:
             stderr_buf[0].decode("utf-8", errors="replace") if stderr_buf else ""
         )
 
+        if self.audit_logger:
+            self.audit_logger.record_decision(eval_request, decision)
+
         return LaunchResult(
             request_id=request.request_id,
             decision=decision,
@@ -708,4 +836,5 @@ class ControlledLauncher:
             timed_out=timed_out,
             error=error,
             execution_time_seconds=time.time() - start_time,
+            enforcement_status=EnforcementStatus.VERIFIED_ALLOWED,
         )
