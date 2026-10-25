@@ -302,7 +302,9 @@ class EndpointSecurityService:
                         d["provenance"] = DecisionProvenance.APPROVAL_MANAGER
                         break
 
-            return True, req.to_dict(), None
+            public_record = req.to_dict()
+            public_record.pop("single_use_token", None)
+            return True, public_record, None
         return False, None, err
 
     def deny_request(

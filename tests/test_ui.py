@@ -299,7 +299,10 @@ class TestDashboardAppInit(unittest.TestCase):
             self.skipTest("GUI display environment not available (headless mode).")
 
         import tkinter as tk
-        root = tk.Tk()
+        try:
+            root = tk.Tk()
+        except Exception as e:
+            self.skipTest(f"Tk environment unavailable: {e}")
         root.withdraw()  # Keep window hidden during test
         try:
             engine = MonitoringEngine()
@@ -322,7 +325,10 @@ class TestDashboardAppInit(unittest.TestCase):
             self.skipTest("GUI display environment not available.")
 
         import tkinter as tk
-        root = tk.Tk()
+        try:
+            root = tk.Tk()
+        except Exception as e:
+            self.skipTest(f"Tk environment unavailable: {e}")
         root.withdraw()
         try:
             engine = MonitoringEngine()
@@ -349,7 +355,10 @@ class TestDashboardAppInit(unittest.TestCase):
             self.skipTest("GUI display environment not available.")
 
         import tkinter as tk
-        root = tk.Tk()
+        try:
+            root = tk.Tk()
+        except Exception as e:
+            self.skipTest(f"Tk environment unavailable: {e}")
         root.withdraw()
         try:
             engine = MonitoringEngine()

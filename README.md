@@ -201,7 +201,7 @@ python src/main.py --scan
 
 ## 6. Running Tests
 
-The test suite contains **309 automated unit and integration tests** covering all subsystems:
+The test suite contains **386 automated unit and integration tests** covering all subsystems:
 
 ```powershell
 # Run the complete test suite

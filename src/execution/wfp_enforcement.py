@@ -291,11 +291,18 @@ class WFPEnforcementManager:
         Rejects broad or destructive default-deny rules.
         """
         with self._lock:
-            # Safety check: Prevent host-wide or subnet-wide blocking
-            if remote_ip in ("0.0.0.0", "::", "*") or remote_port == 0:
-                raise ValueError("Refusing to apply broad or destructive network block rule.")
+            try:
+                address = ipaddress.ip_address(remote_ip)
+            except ValueError as exc:
+                raise ValueError("remote_ip must be a valid IPv4 or IPv6 address.") from exc
+            if address.is_unspecified or address.is_multicast or remote_ip in ("0.0.0.0", "::", "*"):
+                raise ValueError("Refusing broad or multicast network block rules.")
+            if isinstance(remote_port, bool) or not isinstance(remote_port, int) or not 1 <= remote_port <= 65535:
+                raise ValueError("remote_port must be an integer between 1 and 65535.")
+            if protocol.upper() not in ("TCP", "UDP"):
+                raise ValueError("protocol must be TCP or UDP.")
 
-            filter_id = f"test-rule-{remote_ip}-{remote_port}-{protocol}"
+            filter_id = f"test-rule-{remote_ip}-{remote_port}-{protocol.upper()}"
             endpoint_key = f"{remote_ip}:{remote_port}/{protocol.upper()}"
             self._dynamic_filters[endpoint_key] = DynamicWFPFilter(
                 filter_id=filter_id,
@@ -326,15 +333,17 @@ class WFPEnforcementManager:
         with self._lock:
             count = len(self._dynamic_filters)
             self._dynamic_filters.clear()
-            self.logger.info(f"Rolled back and removed all {count} dynamic WFP filter rules.")
+            self.logger.info(f"Cleared {count} in-memory network authorization entries.")
+
+    rollback_all_test_rules = rollback_all_rules
 
     def get_diagnostics(self) -> WFPEnforcementDiagnostics:
         """Inspect actual WFP component state."""
         with self._lock:
             if self._wfp_available and self._wfp_write_permitted:
-                msg = "WFP Active: Kernel session open with administrative filter write access."
+                msg = "WFP API session available; no application-managed OS filters are installed."
             elif self._wfp_available:
-                msg = "WFP Active (Read/Monitor): Kernel session open. Dynamic user-mode policy gating active."
+                msg = "WFP API session available for inspection; no application-managed OS filters are installed."
             else:
                 msg = "WFP session inactive or unavailable."
 

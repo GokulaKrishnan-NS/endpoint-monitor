@@ -36,6 +36,7 @@ class TestProcessMonitor(unittest.TestCase):
             "pid",
             "ppid",
             "name",
+            "exe",
             "username",
             "status",
             "create_time",
@@ -45,6 +46,33 @@ class TestProcessMonitor(unittest.TestCase):
             "parent_name",
         }
         self.assertTrue(expected_keys.issubset(proc_info.keys()))
+
+    def test_deterministic_live_process_snapshot(self):
+        """
+        Deterministic live-process test that launches a benign child process,
+        confirms its PID and executable are collected while it remains alive,
+        and cleans it up reliably.
+        """
+        import subprocess
+        import sys
+        marker_cmd = [sys.executable, "-c", "import time; time.sleep(15)"]
+        child = subprocess.Popen(marker_cmd)
+        try:
+            procs = get_running_processes()
+            self.assertIn(child.pid, procs)
+            child_info = procs[child.pid]
+            self.assertEqual(child_info["pid"], child.pid)
+            self.assertIn("python", (child_info.get("name") or "").lower())
+            self.assertTrue(child_info.get("exe") is None or "python" in child_info["exe"].lower())
+            self.assertEqual(child_info["ppid"], os.getpid())
+            self.assertIsNotNone(child_info.get("create_time"))
+        finally:
+            child.terminate()
+            try:
+                child.wait(timeout=3.0)
+            except subprocess.TimeoutExpired:
+                child.kill()
+                child.wait(timeout=2.0)
 
     def test_get_new_processes(self):
         previous = {

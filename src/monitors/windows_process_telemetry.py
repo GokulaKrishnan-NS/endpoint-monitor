@@ -360,6 +360,7 @@ class WindowsProcessTelemetryCollector:
         self._last_error: Optional[str] = None
         self._records_collected = 0
         self._warnings_emitted = 0
+        self._last_success_timestamp: Optional[float] = None
 
     # ------------------------------------------------------------------
     # Status helpers
@@ -407,6 +408,7 @@ class WindowsProcessTelemetryCollector:
                 "last_error": self._last_error,
                 "records_collected": self._records_collected,
                 "last_record_id": self._last_record_id,
+                "last_success_timestamp": self._last_success_timestamp,
             }
 
     def close(self) -> None:
@@ -525,8 +527,10 @@ class WindowsProcessTelemetryCollector:
         with self._lock:
             self._last_record_id = newest
             self._baseline_seeded = True
-            if self._status == TelemetryStatus.UNKNOWN:
-                self._status = TelemetryStatus.AVAILABLE
+            self._status = TelemetryStatus.AVAILABLE
+            self._last_success_timestamp = time.time()
+            self._last_error = None
+            self._unavailable_reason = None
 
         logger.info(
             f"Process creation telemetry baseline established on channel "
@@ -575,6 +579,9 @@ class WindowsProcessTelemetryCollector:
 
             if self._status == TelemetryStatus.UNKNOWN:
                 self._status = TelemetryStatus.AVAILABLE
+            self._last_success_timestamp = time.time()
+            self._last_error = None
+            self._unavailable_reason = None
 
         return new_records
 
@@ -586,6 +593,8 @@ class WindowsProcessTelemetryCollector:
         """Record a recoverable collection problem."""
         with self._lock:
             self._last_error = message
+            if self._status != TelemetryStatus.UNAVAILABLE:
+                self._status = TelemetryStatus.DEGRADED
             self._warnings_emitted += 1
             should_log = self._warnings_emitted <= 3
         if should_log:

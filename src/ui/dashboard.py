@@ -33,7 +33,6 @@ from src.ui.adapter import (
     SEVERITY_COLORS,
     adapt_event_row,
     adapt_file_event_row,
-    adapt_network_event_row,
     adapt_process_row,
     filter_and_sort_events,
     filter_and_sort_processes,
@@ -47,6 +46,22 @@ from src.ui.table_sync import sync_tree_rows
 
 
 logger = logging.getLogger("endpoint_monitor")
+
+
+def _redact_display_value(value: Any, key: Optional[str] = None) -> Any:
+    """Return a recursively sanitized copy of event data for the raw inspector."""
+    if key == "command_line" and isinstance(value, list):
+        return redact_command_line(value)
+    if isinstance(value, dict):
+        return {
+            str(item_key): _redact_display_value(item, str(item_key))
+            for item_key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_redact_display_value(item) for item in value]
+    if isinstance(value, str):
+        return redact_string(value)
+    return value
 
 
 def is_gui_available() -> bool:
@@ -149,14 +164,14 @@ class SecurityDashboardApp:
         title_box.pack(side=tk.LEFT)
         title_label = ttk.Label(
             title_box,
-            text="🛡️ ENDPOINT SECURITY MONITOR",
+            text="ENDPOINT MONITOR",
             style="Header.TLabel",
         )
         title_label.pack(anchor=tk.W)
 
         subtitle_label = ttk.Label(
             title_box,
-            text="Passive Telemetry • Process Trees • Controlled Execution Gating • Windows Application Control",
+            text="Sampled host telemetry • Process analysis • Policy evaluation (not system-wide enforcement)",
             font=("Segoe UI", 8),
             foreground="#555555",
         )
@@ -313,16 +328,16 @@ class SecurityDashboardApp:
         res_box.columnconfigure(1, weight=1)
 
         # OS Policy Integration Status Box
-        os_box = ttk.LabelFrame(middle_frame, text=" OS Application Control Status ", padding=10)
+        os_box = ttk.LabelFrame(middle_frame, text=" OS Telemetry & Policy Status ", padding=10)
         os_box.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=4)
 
-        self.lbl_os_status = ttk.Label(
+        self.lbl_process_polling_status = ttk.Label(
             os_box,
-            text="• WDAC / Code Integrity Event Telemetry: Ready\n• AppLocker Event Telemetry: Ready\n• OS Kernel Enforcement: Static Baseline Policy\n• Dynamic Risk Pre-Execution Interception: Inactive (Requires Kernel Driver)",
+            text="• Process Polling: Initializing...",
             font=("Segoe UI", 9),
             foreground="#333333",
         )
-        self.lbl_os_status.pack(anchor=tk.W)
+        self.lbl_process_polling_status.pack(anchor=tk.W)
 
         self.lbl_telemetry_status = ttk.Label(
             os_box,
@@ -331,6 +346,14 @@ class SecurityDashboardApp:
             foreground="#333333",
         )
         self.lbl_telemetry_status.pack(anchor=tk.W)
+
+        self.lbl_os_status = ttk.Label(
+            os_box,
+            text="• WDAC / AppLocker event-log collection: configuration-dependent\n• OS process/network blocking: not verified by this application\n• Driver/WFP source files do not prove active enforcement",
+            font=("Segoe UI", 9),
+            foreground="#555555",
+        )
+        self.lbl_os_status.pack(anchor=tk.W, pady=(2, 0))
 
         # Bottom: Recent Critical Alerts Table
         recent_box = ttk.LabelFrame(self.tab_dashboard, text=" Recent Critical Alerts ", padding=8)
@@ -563,7 +586,11 @@ class SecurityDashboardApp:
     def _build_activity_tab(self) -> None:
         """Split view displaying real-time network sockets and file modifications."""
         # Top half: Network Activity
-        net_frame = ttk.LabelFrame(self.tab_activity, text=" Network Socket Telemetry ", padding=6)
+        net_frame = ttk.LabelFrame(
+            self.tab_activity,
+            text=" Current Sampled TCP/UDP Sockets (not packet capture, DNS, or flow history) ",
+            padding=6,
+        )
         net_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=(0, 6))
 
         cols = ("time", "pid", "proc", "proto", "local", "remote", "status")
@@ -574,7 +601,7 @@ class SecurityDashboardApp:
         self.tree_network.heading("proto", text="Proto")
         self.tree_network.heading("local", text="Local Socket")
         self.tree_network.heading("remote", text="Remote Endpoint")
-        self.tree_network.heading("status", text="Port Assessment")
+        self.tree_network.heading("status", text="Socket State")
 
         self.tree_network.column("time", width=140, anchor=tk.W)
         self.tree_network.column("pid", width=65, anchor=tk.CENTER)
@@ -588,9 +615,15 @@ class SecurityDashboardApp:
         sb_net = ttk.Scrollbar(net_frame, orient=tk.VERTICAL, command=self.tree_network.yview)
         self.tree_network.configure(yscrollcommand=sb_net.set)
         sb_net.pack(side=tk.RIGHT, fill=tk.Y)
+        self.lbl_network_health = ttk.Label(net_frame, text="Socket sampling status: not yet collected")
+        self.lbl_network_health.pack(side=tk.BOTTOM, anchor=tk.W)
 
         # Bottom half: File Activity
-        file_frame = ttk.LabelFrame(self.tab_activity, text=" File System Modifications (Monitored Folder) ", padding=6)
+        file_frame = ttk.LabelFrame(
+            self.tab_activity,
+            text=" File Changes (monitored_folder only; not system-wide) ",
+            padding=6,
+        )
         file_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
         f_cols = ("time", "action", "path", "dest", "sev")
@@ -624,7 +657,7 @@ class SecurityDashboardApp:
 
         self.lbl_svc_health_summary = ttk.Label(
             health_box,
-            text="• Service Health: Initializing... | Policy Engine: Active (v1.0.0) | Approval Queue: 0/100\n• OS Kernel Enforcement: Not Installed (Phase 1 Foundation - No Driver) | Mode: Simulation & Monitoring",
+            text="• Local policy evaluator initializing; privileged IPC service is not connected\n• System-wide process/network enforcement is not verified or active",
             font=("Segoe UI", 9),
             foreground="#0d6efd",
         )
@@ -698,11 +731,15 @@ class SecurityDashboardApp:
         row2.pack(fill=tk.X, pady=2)
         ttk.Label(row2, text="Arguments / Remote:", width=18).pack(side=tk.LEFT)
         self.ent_exec_args = ttk.Entry(row2, width=60)
-        self.ent_exec_args.insert(0, "-NoProfile -Command whoami")
         self.ent_exec_args.pack(side=tk.LEFT, padx=5)
 
         btn_eval = ttk.Button(row2, text="🛡️ Evaluate Policy", command=self._action_evaluate_request)
         btn_eval.pack(side=tk.LEFT, padx=10)
+        ttk.Label(
+            input_frame,
+            text="Policy evaluation only. Arguments are local process arguments, not remote commands. This does not intercept commands launched elsewhere.",
+            wraplength=1000,
+        ).pack(anchor=tk.W, pady=(4, 0))
 
         # Evaluated Decision Card
         self.exec_decision_card = ttk.LabelFrame(self.tab_execution, text=" Policy Gate Decision ", padding=8)
@@ -789,12 +826,35 @@ class SecurityDashboardApp:
         # 2. Update Dashboard Overview Cards
         self.lbl_card_procs.config(text=str(snap["process_count"]))
         self.lbl_card_high_alerts.config(text=str(snap["alert_counts"]["HIGH"]))
-        self.lbl_card_total_events.config(text=str(snap["alert_counts"]["TOTAL"]))
+        total_evts = snap.get("total_events", snap["alert_counts"]["TOTAL"])
+        self.lbl_card_total_events.config(text=str(total_evts))
+
+        # 2a. Update Process Polling Telemetry Health Status
+        if hasattr(self, "lbl_process_polling_status"):
+            poll_info = snap.get("process_polling", {})
+            p_status = poll_info.get("status", "UNKNOWN")
+            p_count = poll_info.get("observed_processes", snap.get("process_count", 0))
+            p_last = poll_info.get("last_success_timestamp")
+            p_last_str = format_timestamp(p_last) if p_last is not None else "never"
+            p_err = poll_info.get("last_error")
+            p_polls = poll_info.get("total_polls", 0)
+
+            if p_status in ("RUNNING", "ACTIVE"):
+                if p_err:
+                    poll_text = f"• Process Polling: {p_status} ({p_count} PIDs, #{p_polls} polls, last: {p_last_str}) | Error: {p_err}"
+                    poll_color = "#fd7e14"
+                else:
+                    poll_text = f"• Process Polling: {p_status} ({p_count} PIDs sampled at {p_last_str}, #{p_polls} cycles)"
+                    poll_color = "#198754"
+            else:
+                poll_text = f"• Process Polling: {p_status} (Last: {p_last_str})"
+                poll_color = "#dc3545" if p_status == "ERROR" else "#6c757d"
+            self.lbl_process_polling_status.config(text=poll_text, foreground=poll_color)
 
         # 2b. Report the real state of the Windows process creation telemetry
         telemetry = snap.get("process_telemetry", {}) or {}
         if not telemetry.get("enabled"):
-            telemetry_text = "• Process Creation Telemetry (4688): Disabled"
+            telemetry_text = "• Process Creation Telemetry (4688): Disabled (polling active)"
             telemetry_color = "#6c757d"
         elif telemetry.get("status") == "AVAILABLE":
             telemetry_text = (
@@ -802,10 +862,13 @@ class SecurityDashboardApp:
                 f"Records: {telemetry.get('records_collected', 0)}"
             )
             telemetry_color = "#198754"
+        elif telemetry.get("status") == "UNKNOWN":
+            telemetry_text = "• Process Creation Telemetry (4688): Enabled; waiting for first collection"
+            telemetry_color = "#fd7e14"
         else:
             telemetry_text = (
-                f"• Process Creation Telemetry (4688): Unavailable "
-                f"({telemetry.get('unavailable_reason') or 'unknown'}) - polling only"
+                f"• Process Creation Telemetry (4688): {telemetry.get('status', 'UNAVAILABLE')} "
+                f"({telemetry.get('unavailable_reason') or 'unknown'}) - polling active"
             )
             telemetry_color = "#dc3545"
         self.lbl_telemetry_status.config(text=telemetry_text, foreground=telemetry_color)
@@ -824,13 +887,13 @@ class SecurityDashboardApp:
             svc_health = snap.get("service_health", {})
             overall = svc_health.get("overall_status", "UNKNOWN")
             pol_status = svc_health.get("policy_engine", {}).get("status", "HEALTHY")
-            ipc_status = svc_health.get("ipc_service", {}).get("status", "READY")
+            ipc_status = svc_health.get("service_connection", {}).get("status", "NOT_CONNECTED")
             appr_q = svc_health.get("approval_queue", {})
             q_info = f"{appr_q.get('pending_count', 0)}/{appr_q.get('capacity', 100)}"
             diag_text = (
-                f"• Privileged Service: {overall} | Policy Engine: {pol_status} (v1.0.0) | "
+                f"• Local Policy: {pol_status} | Overall: {overall} | "
                 f"Approval Queue: {q_info} | IPC: {ipc_status}\n"
-                f"• OS Kernel Enforcement: Not Installed (Phase 1 Foundation - No Driver) | Mode: Simulation & Monitoring"
+                f"• Privileged service: not connected | OS-level process/network blocking: not verified"
             )
             self.lbl_svc_health_summary.config(text=diag_text)
 
@@ -998,26 +1061,34 @@ class SecurityDashboardApp:
         self.lbl_res_swap_detailed.config(text=swap_text)
 
     def _refresh_activity_tables(self) -> None:
-        """Render network connections and file activity."""
-        net_events = self.engine.get_network_events_snapshot()
+        """Render the latest sampled sockets and watched-folder file activity."""
+        net_events = self.engine.get_network_snapshot()
         net_rows = []
         for ne in net_events[-40:]:
-            r = adapt_network_event_row(ne)
             net_rows.append(
                 (
-                    r["time_str"],
-                    r["pid"],
-                    r["process_name"],
-                    r["protocol"],
-                    r["local_address"],
-                    r["remote_address"],
-                    r["status"],
+                    format_timestamp(ne.get("timestamp")),
+                    ne.get("pid") or "N/A",
+                    ne.get("process_name") or "N/A",
+                    ne.get("protocol") or "N/A",
+                    ne.get("local_address") or "N/A",
+                    ne.get("remote_address") or "N/A",
+                    ne.get("status") or "N/A",
                 )
             )
         sync_tree_rows(
             self.tree_network,
             net_rows,
             key_fn=lambda row: (row[0], row[1], row[5], row[6]),
+        )
+        health = self.engine.get_state_snapshot().get("network_health", {})
+        status = health.get("status", "UNKNOWN")
+        last_success = health.get("last_success_timestamp")
+        last_text = format_timestamp(last_success) if last_success is not None else "never"
+        error = health.get("last_error")
+        error_text = f" | Last error: {error}" if error and status != "AVAILABLE" else ""
+        self.lbl_network_health.config(
+            text=f"Socket sampling: {status} | Last successful sample: {last_text}{error_text}"
         )
 
         file_events = self.engine.get_file_events_snapshot()
@@ -1049,13 +1120,13 @@ class SecurityDashboardApp:
             q_cap = queue_info.get("capacity", 100)
             q_sat = " [SATURATED!]" if queue_info.get("saturated") else ""
 
-            driver_desc = "Active (Driver Device Open)" if driver_st else "Not Loaded (Prerequisite: WDK/Signing)"
-            wfp_desc = "Active (ALE Connect Layer Verified)" if wfp_st else "Inactive"
+            driver_desc = "Device open; blocking unverified" if driver_st else "Not loaded"
+            wfp_desc = "API session only; no installed filters" if wfp_st else "Inactive"
             if hasattr(self, "lbl_svc_health_summary"):
                 self.lbl_svc_health_summary.config(
                     text=(
-                        f"• Protection Mode: {overall} | Controlled Launcher: ACTIVE | Approval Queue: {q_pend}/{q_cap}{q_sat}\n"
-                        f"• Native Kernel Driver: {driver_desc} | WFP ALE Filtering: {wfp_desc} | Policy: Synced (v1.0.0)"
+                        f"• Policy status: {overall} | Approval Queue: {q_pend}/{q_cap}{q_sat}\n"
+                        f"• Driver: {driver_desc} | WFP: {wfp_desc} | System-wide enforcement: not verified"
                     ),
                     foreground="#198754" if overall == "FULLY_ACTIVE" else ("#0d6efd" if overall == "PARTIALLY_ACTIVE" else "#dc3545"),
                 )
@@ -1181,14 +1252,19 @@ class SecurityDashboardApp:
             return
         item = self.tree_alerts.item(selected[0])
         time_val = item["values"][0]
-        target_val = item["values"][4]
+        source_val = item["values"][2]
+        event_type_val = item["values"][3]
 
         events = self.engine.get_events_snapshot()
-        for evt in events:
-            if format_timestamp(evt.timestamp) == time_val:
+        for evt in reversed(events):
+            if (
+                format_timestamp(evt.timestamp) == time_val
+                and evt.source == str(source_val)
+                and evt.event_type == str(event_type_val)
+            ):
                 self.txt_alert_inspector.delete("1.0", tk.END)
                 try:
-                    payload = json.dumps(evt.to_dict(), indent=2)
+                    payload = json.dumps(_redact_display_value(evt.to_dict()), indent=2)
                 except Exception:
                     payload = str(evt)
                 self.txt_alert_inspector.insert(tk.END, payload)
@@ -1312,4 +1388,3 @@ class SecurityDashboardApp:
     def run(self) -> None:
         """Start the Tkinter event loop."""
         self.root.mainloop()
-

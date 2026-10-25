@@ -41,6 +41,7 @@ def get_running_processes():
         "pid",
         "ppid",
         "name",
+        "exe",
         "username",
         "status",
         "create_time",
@@ -54,6 +55,9 @@ def get_running_processes():
             process_info = process.info
             if not process_info or process_info.get("pid") is None:
                 continue
+
+            if "exe" not in process_info:
+                process_info["exe"] = None
 
             processes[process_info["pid"]] = process_info
 

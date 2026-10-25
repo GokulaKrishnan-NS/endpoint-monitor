@@ -315,6 +315,32 @@ class TestNetworkMonitor(unittest.TestCase):
         self.assertEqual(composite_risk["level"], "HIGH")
         self.assertTrue(any("4444" in r for r in composite_risk["reasons"]))
 
+    def test_scan_network_disabled(self):
+        """When disabled via config, check_connections returns DISABLED and performs no scanning."""
+        monitor = NetworkMonitor(config={"enabled": False})
+        with patch("psutil.net_connections") as mock_net:
+            res = monitor.check_connections()
+            mock_net.assert_not_called()
+            self.assertEqual(res["collection_status"], "DISABLED")
+            self.assertEqual(res["total_connections"], 0)
+            self.assertEqual(res["active_connections"], [])
+
+    @patch("psutil.net_connections")
+    def test_scan_network_telemetry_status_on_success(self, mock_net):
+        """Successful scan updates collection_status to AVAILABLE and records success timestamp."""
+        mock_net.return_value = []
+        monitor = NetworkMonitor(config={"enabled": True})
+        res = monitor.check_connections()
+        self.assertEqual(res["collection_status"], "AVAILABLE")
+        self.assertIsNotNone(res["last_success_timestamp"])
+        self.assertIsNone(res["last_error"])
+
+    def test_network_connection_key_includes_create_time(self):
+        """Connection key differentiates processes with same PID but different create times."""
+        c1 = NetworkConnection(pid=100, protocol="TCP", local_ip="1.2.3.4", local_port=1000, remote_ip="5.6.7.8", remote_port=80, process_create_time=1000.0)
+        c2 = NetworkConnection(pid=100, protocol="TCP", local_ip="1.2.3.4", local_port=1000, remote_ip="5.6.7.8", remote_port=80, process_create_time=2000.0)
+        self.assertNotEqual(c1.key, c2.key)
+
 
 if __name__ == "__main__":
     unittest.main()

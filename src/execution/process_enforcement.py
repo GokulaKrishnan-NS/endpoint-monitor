@@ -189,23 +189,9 @@ class ProcessEnforcementManager:
 
         decision = self.policy.evaluate(req)
 
-        # Distinguish actual OS enforcement from policy calculation:
-        # If native driver is loaded and actively intercepting:
-        if self.is_driver_available():
-            if decision.decision == DecisionStatus.BLOCK:
-                decision.enforcement_status = EnforcementStatus.VERIFIED_BLOCKED
-            elif decision.decision == DecisionStatus.REQUIRE_APPROVAL:
-                decision.enforcement_status = EnforcementStatus.PENDING_APPROVAL
-            else:
-                decision.enforcement_status = EnforcementStatus.VERIFIED_ALLOWED
-        else:
-            # Without native driver, independent processes CANNOT be blocked at the OS layer
-            if decision.decision == DecisionStatus.BLOCK:
-                decision.enforcement_status = EnforcementStatus.POLICY_DECIDED_ONLY
-            elif decision.decision == DecisionStatus.REQUIRE_APPROVAL:
-                decision.enforcement_status = EnforcementStatus.PENDING_APPROVAL
-            else:
-                decision.enforcement_status = EnforcementStatus.MONITORING_ONLY
+        # A device handle is not evidence that a policy decision reached a
+        # process-creation callback or changed the operating-system outcome.
+        decision.enforcement_status = EnforcementStatus.NOT_ENFORCED
 
         # Record structured audit log
         if self.audit_logger:
@@ -218,7 +204,10 @@ class ProcessEnforcementManager:
         with self._lock:
             driver_avail = self.is_driver_available()
             if driver_avail:
-                msg = "Native kernel driver active. System-wide process creation interception enabled."
+                msg = (
+                    "Driver device is open, but no verified policy channel or process-blocking "
+                    "integration is active."
+                )
             else:
                 msg = (
                     "Native kernel driver not loaded. Application-controlled launches are strictly "
@@ -228,10 +217,10 @@ class ProcessEnforcementManager:
             return ProcessEnforcementDiagnostics(
                 driver_available=driver_avail,
                 driver_device_opened=driver_avail,
-                driver_service_connected=driver_avail,
-                process_notify_callback_active=driver_avail,
+                driver_service_connected=False,
+                process_notify_callback_active=False,
                 controlled_launcher_active=True,
-                independent_interception_active=driver_avail,
+                independent_interception_active=False,
                 status_message=msg,
             )
 

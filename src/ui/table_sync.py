@@ -21,7 +21,7 @@ def _default_key(row: Sequence[Any], key_index: int) -> RowKey:
         value = row[key_index]
     except (IndexError, TypeError):
         return ("",)
-    return (value,)
+    return (str(value),)
 
 
 def sync_tree_rows(
@@ -59,7 +59,7 @@ def sync_tree_rows(
     else:
         def _key(row: Sequence[Any]) -> RowKey:
             try:
-                return tuple(key_fn(row))
+                return tuple(str(x) for x in key_fn(row))
             except Exception:
                 return ("",)
 
@@ -106,7 +106,7 @@ def sync_tree_rows(
         except Exception:
             current = None
 
-        if list(current or ()) != list(row):
+        if tuple(str(x) for x in (current or ())) != tuple(str(x) for x in row):
             tree.item(item_id, values=row)
             stats["updated"] += 1
         else:

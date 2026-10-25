@@ -117,17 +117,29 @@ class MonitoringEngine:
         self._execution_records: Deque[Dict[str, Any]] = deque(maxlen=200)
         self._resource_history: Deque[Dict[str, Any]] = deque(maxlen=100)
         self._latest_resources: Dict[str, Any] = {}
+        self._network_snapshot: List[Dict[str, Any]] = []
+        self._network_health: Dict[str, Any] = {
+            "enabled": True,
+            "status": "NOT_YET_COLLECTED",
+            "last_success_timestamp": None,
+            "last_error": None,
+        }
+        self._active_baseline_anomalies: Set[str] = set()
         self._errors: Deque[str] = deque(maxlen=50)
         self._dropped_notifications = 0
         self._command_detector_invocations = 0
         self._snapshot_generation = 0
+        self._last_process_poll_timestamp: Optional[float] = None
+        self._last_process_poll_success: Optional[float] = None
+        self._last_process_poll_error: Optional[str] = None
+        self._process_polling_count: int = 0
 
         # Subsystem engines
         self.config = load_execution_config(self.config_path)
         self.tree_analyzer = ProcessTreeAnalyzer()
         self.baseline_engine = BaselineEngine() if baseline_path is None else BaselineEngine(baseline_path)
-        self.resource_monitor = ResourceMonitor(logger=logger)
-        self.network_monitor = NetworkMonitor(logger=logger)
+        self.resource_monitor = ResourceMonitor(config_path=self.config_path, logger=logger)
+        self.network_monitor = NetworkMonitor(config_path=self.config_path, logger=logger)
         self.login_monitor = LoginMonitor(logger=logger)
         self.execution_service = ControlledExecutionService(config=self.config)
         self.security_service = EndpointSecurityService(
@@ -338,9 +350,11 @@ class MonitoringEngine:
                     {
                         "timestamp": time.time(),
                         "metrics": self._latest_resources,
-                        "status": res_result.get("status"),
+                        "status": res_result.get("overall_severity"),
                     }
                 )
+            self._ingest_resource_alerts(res_result)
+            self._evaluate_resource_baseline(res_result.get("metrics", {}))
         except Exception as e:
             self._record_error(f"Resource monitor check failed: {e}")
 
@@ -348,10 +362,13 @@ class MonitoringEngine:
             return
 
         # 2. Process Monitoring & Process Tree Analysis
+        with self._lock:
+            self._last_process_poll_timestamp = time.time()
+            prev_processes = dict(self._processes)
+        current_processes = dict(prev_processes)
+        process_tree = None
         try:
             current_processes = get_running_processes()
-            with self._lock:
-                prev_processes = dict(self._processes)
 
             # Avoid wiping out live process state on an unexpected scan failure
             if not current_processes and prev_processes:
@@ -394,10 +411,15 @@ class MonitoringEngine:
             with self._lock:
                 self._processes = current_processes
                 self._snapshot_generation += 1
+                self._last_process_poll_success = time.time()
+                self._process_polling_count += 1
+                self._last_process_poll_error = None
 
         except Exception as e:
-            self._record_error(f"Process monitoring cycle failed: {e}")
+            err_msg = str(e)
+            self._record_error(f"Process monitoring cycle failed: {err_msg}")
             with self._lock:
+                self._last_process_poll_error = err_msg
                 current_processes = dict(self._processes)
             process_tree = None
 
@@ -406,15 +428,33 @@ class MonitoringEngine:
             return
 
         try:
-            net_result = self.network_monitor.check_connections(
-                processes=current_processes,
-                process_tree=process_tree,
-                new_only=bool(prev_processes),
-            )
-            for net_event in net_result.get("suspicious_events", []):
-                self._ingest_event(net_event)
+            if self.network_monitor.enabled:
+                net_result = self.network_monitor.check_connections(
+                    processes=current_processes,
+                    process_tree=process_tree,
+                    new_only=bool(prev_processes),
+                )
                 with self._lock:
-                    self._network_events.append(net_event)
+                    self._network_snapshot = list(net_result.get("active_connections", []))
+                    self._network_health = {
+                        "enabled": True,
+                        "status": net_result.get("collection_status", "UNKNOWN"),
+                        "last_success_timestamp": net_result.get("last_success_timestamp"),
+                        "last_error": net_result.get("last_error"),
+                    }
+                for net_event in net_result.get("suspicious_events", []):
+                    self._ingest_event(net_event)
+                    with self._lock:
+                        self._network_events.append(net_event)
+            else:
+                with self._lock:
+                    self._network_snapshot = []
+                    self._network_health = {
+                        "enabled": False,
+                        "status": "DISABLED",
+                        "last_success_timestamp": None,
+                        "last_error": None,
+                    }
         except Exception as e:
             self._record_error(f"Network monitor cycle failed: {e}")
 
@@ -442,7 +482,7 @@ class MonitoringEngine:
             return
 
         try:
-            logon_events = self.login_monitor.check_logon_events()
+            logon_events = self.login_monitor.check_logon_events(new_only=True)
             for l_evt in logon_events:
                 self._ingest_event(l_evt)
                 with self._lock:
@@ -615,11 +655,17 @@ class MonitoringEngine:
         try:
             anomaly_result = self.baseline_engine.analyze_event(event)
             event.metadata["baseline_anomaly"] = anomaly_result
-            self.baseline_engine.collect_event(event)
-            if anomaly_result.get("is_anomaly"):
+            if anomaly_result.get("anomaly_score", 0):
                 for reason in anomaly_result.get("reasons", []):
                     if reason not in event.risk_reasons:
                         event.risk_reasons.append(reason)
+                event.risk_score += int(anomaly_result["anomaly_score"])
+                event.risk_level = (
+                    "HIGH" if event.risk_score >= 7 else
+                    "MEDIUM" if event.risk_score >= 3 else "LOW"
+                )
+                event.severity = event.risk_level
+            self.baseline_engine.collect_event(event)
         except Exception as e:
             logger.debug(f"Baseline engine error on PID {event.pid}: {e}")
 
@@ -629,6 +675,67 @@ class MonitoringEngine:
                 self._process_events[event.pid] = event
 
         return event
+
+    def _ingest_resource_alerts(self, result: Dict[str, Any]) -> None:
+        """Publish actionable resource state transitions, not every metric sample."""
+        for alert in result.get("alerts", []):
+            severity = alert.get("severity", "LOW")
+            score = {"LOW": 1, "MEDIUM": 4, "HIGH": 7}.get(severity, 0)
+            event = Event(
+                event_type="resource_recovery" if alert.get("type") == "RECOVERY" else "resource_anomaly",
+                source="resource_monitor",
+                severity=severity,
+                risk_score=score,
+                risk_level=severity,
+                indicators=["resource_state_transition"],
+                risk_reasons=[alert.get("message", "Resource state changed")],
+                resource_metrics=result.get("metrics"),
+                metadata={
+                    "resource": alert.get("resource"),
+                    "usage": alert.get("usage"),
+                    "alert_type": alert.get("type"),
+                    "is_sustained": alert.get("is_sustained", False),
+                    "threshold_status": result.get("overall_severity"),
+                },
+            )
+            self._ingest_event(event)
+
+    def _evaluate_resource_baseline(self, metrics: Dict[str, Any]) -> None:
+        """Score resource samples and emit one event per baseline anomaly transition."""
+        sample = Event(
+            event_type="resource_sample",
+            source="resource_monitor",
+            resource_metrics=metrics,
+        )
+        try:
+            result = self.baseline_engine.analyze_event(sample)
+            self.baseline_engine.collect_event(sample)
+        except Exception as exc:
+            self._record_error(f"Resource baseline evaluation failed: {exc}")
+            return
+
+        reasons = result.get("reasons", [])
+        anomaly_key = "|".join(reasons)
+        if result.get("is_anomaly") and anomaly_key:
+            if anomaly_key not in self._active_baseline_anomalies:
+                score = int(result.get("anomaly_score", 0))
+                level = result.get("anomaly_level", "LOW")
+                self._ingest_event(
+                    Event(
+                        event_type="resource_baseline_anomaly",
+                        source="behavioral_baseline",
+                        severity=level,
+                        risk_score=score,
+                        risk_level=level,
+                        indicators=["resource_baseline_anomaly"],
+                        risk_reasons=list(reasons),
+                        resource_metrics=metrics,
+                        metadata={"baseline_status": result.get("status")},
+                    )
+                )
+            self._active_baseline_anomalies.add(anomaly_key)
+        else:
+            self._active_baseline_anomalies.clear()
 
     # -------------------------------------------------------------------------
     # Ingestion and Alert Handlers
@@ -746,8 +853,15 @@ class MonitoringEngine:
         return self.security_service.submit_request(request)
 
     def get_service_health(self) -> Dict[str, Any]:
-        """Fetch real-time health telemetry from EndpointSecurityService."""
-        return self.security_service.get_health()
+        """Report local policy state separately from the absent privileged IPC service."""
+        health = self.security_service.get_health()
+        health["service_connection"] = {
+            "status": "NOT_CONNECTED",
+            "mode": "IN_PROCESS_POLICY_ONLY",
+            "ipc_enabled": bool(self.security_service.enable_ipc),
+            "service_running": bool(self.security_service.is_running()),
+        }
+        return health
 
     def get_pending_approvals(self) -> List[Dict[str, Any]]:
         """Fetch list of pending approval requests from ApprovalManager."""
@@ -762,8 +876,10 @@ class MonitoringEngine:
         """Approve a pending request and record authorization token."""
         success, rec, err = self.security_service.approve_request(approval_id, approver=approver, reason=reason)
         if success and rec:
-            token = rec.get("single_use_token")
-            return True, f"Request {approval_id} successfully approved (Token: {token})."
+            return True, (
+                f"Request {approval_id} successfully approved. Its single-use authorization remains internal "
+                "to the controlled retry path."
+            )
         return False, err or "Failed to approve request."
 
     def deny_request(
@@ -865,6 +981,11 @@ class MonitoringEngine:
         with self._lock:
             return list(self._network_events)
 
+    def get_network_snapshot(self) -> List[Dict[str, Any]]:
+        """Return the latest sampled socket snapshot (not a connection history)."""
+        with self._lock:
+            return [dict(connection) for connection in self._network_snapshot]
+
     def get_file_events_snapshot(self) -> List[Event]:
         """Return a list of recent file modification events."""
         with self._lock:
@@ -914,13 +1035,17 @@ class MonitoringEngine:
             return {
                 "status": self._status,
                 "process_count": total_procs,
+                "total_events": len(self._events),
+                "total_alerts": len(alerts_list),
                 "alert_counts": {
                     "HIGH": high_count,
                     "MEDIUM": med_count,
                     "LOW": low_count,
                     "TOTAL": len(alerts_list),
                 },
+                "process_polling": self.get_process_polling_status(),
                 "latest_resources": dict(self._latest_resources),
+                "network_health": dict(self._network_health),
                 "controlled_execution": {
                     "enabled": ce_cfg.get("enabled", True),
                     "dry_run": ce_cfg.get("dry_run", True),
@@ -954,10 +1079,29 @@ class MonitoringEngine:
         with self._lock:
             return self._snapshot_generation
 
+    def get_process_polling_status(self) -> Dict[str, Any]:
+        """Return diagnostic health and performance of the process polling monitor."""
+        with self._lock:
+            is_active = self.is_running() and not self.is_paused()
+            status_str = "RUNNING" if is_active else ("PAUSED" if self.is_paused() else self._status)
+            return {
+                "running": is_active,
+                "status": status_str,
+                "last_poll_timestamp": self._last_process_poll_timestamp,
+                "last_success_timestamp": self._last_process_poll_success,
+                "last_error": self._last_process_poll_error,
+                "total_polls": self._process_polling_count,
+                "observed_processes": len(self._processes),
+            }
+
     def get_process_telemetry_status(self) -> Dict[str, Any]:
         """Return the diagnostic status of the Windows process-creation source."""
         snapshot = self.process_telemetry_collector.get_status_snapshot()
+        snapshot["configured"] = bool(self.process_telemetry_enabled)
         snapshot["enabled"] = bool(self.process_telemetry_enabled)
+        if not self.process_telemetry_enabled:
+            snapshot["status"] = "DISABLED"
+            snapshot["unavailable_reason"] = None
         with self._lock:
             snapshot["dropped_notifications"] = self._dropped_notifications
             snapshot["tracked_process_identities"] = len(self.process_identities)

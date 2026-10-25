@@ -119,6 +119,36 @@ class TestLoginMonitor(unittest.TestCase):
         self.assertEqual(evt.risk_score, 5)  # 2 (remote) + 3 (service)
         self.assertEqual(evt.risk_level, "MEDIUM")
 
+    @patch("psutil.users")
+    def test_check_logon_events_new_only_deduplication(self, mock_users):
+        mock_users.return_value = [
+            _MockSUser(name="alice", terminal="console", host="localhost", started=1700000000.0, pid=6000),
+        ]
+        # First scan with new_only=True returns the new session
+        first_events = self.monitor.check_logon_events(new_only=True)
+        self.assertEqual(len(first_events), 1)
+        self.assertEqual(first_events[0].username, "alice")
+        self.assertEqual(first_events[0].event_type, "user_logon")
+
+        # Second scan with same session and new_only=True yields 0 events
+        second_events = self.monitor.check_logon_events(new_only=True)
+        self.assertEqual(len(second_events), 0)
+
+    @patch("psutil.users")
+    def test_check_logon_events_session_ended(self, mock_users):
+        mock_users.return_value = [
+            _MockSUser(name="bob", terminal="console", host="localhost", started=1700000000.0, pid=7000),
+        ]
+        self.monitor.check_logon_events(new_only=True)
+
+        # Bob logs out
+        mock_users.return_value = []
+        end_events = self.monitor.check_logon_events(new_only=True)
+        self.assertEqual(len(end_events), 1)
+        self.assertEqual(end_events[0].event_type, "user_session_ended")
+        self.assertEqual(end_events[0].username, "bob")
+        self.assertEqual(end_events[0].pid, 7000)
+
 
 if __name__ == "__main__":
     unittest.main()

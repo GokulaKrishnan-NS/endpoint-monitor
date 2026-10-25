@@ -170,16 +170,14 @@ class SubsystemHealthTracker:
                 overall = "UNHEALTHY"
             elif self._driver_available and self._wfp_session_open and self._wfp_write_permitted:
                 overall = "FULLY_ACTIVE"
-            elif self._wfp_available or True:  # Controlled execution active, native driver optional
-                overall = "PARTIALLY_ACTIVE"
             else:
-                overall = "UNHEALTHY"
+                overall = "PARTIALLY_ACTIVE"
 
             return {
                 "overall_status": overall,
                 "uptime_seconds": round(uptime, 2),
                 "protection_scope": {
-                    "controlled_launcher": "ACTIVE",
+                    "controlled_launcher": "ACTIVE" if self._is_enabled else "DISABLED",
                     "native_kernel_driver": "ACTIVE" if self._driver_available else "NOT_LOADED",
                     "wfp_network_filtering": "ACTIVE" if self._wfp_session_open else "INACTIVE",
                 },
@@ -219,13 +217,9 @@ class SubsystemHealthTracker:
                     "delivery_status": self._event_delivery_status,
                 },
                 "os_enforcement_adapter": {
-                    "status": "PARTIALLY_ACTIVE" if not self._driver_available else "FULLY_ACTIVE",
-                    "verified_active": self._driver_available and self._wfp_session_open,
-                    "message": (
-                        "Kernel driver and WFP ALE active."
-                        if (self._driver_available and self._wfp_session_open)
-                        else "ControlledLauncher active; kernel driver not loaded; WFP session verified."
-                    ),
+                    "status": "NOT_INSTALLED" if not self._driver_available else "DEVICE_OPEN_UNVERIFIED",
+                    "verified_active": False,
+                    "message": "Policy evaluation and controlled-launch gating only; no verified system-wide OS enforcement is active.",
                 },
             }
 
@@ -284,11 +278,15 @@ class SecurityAuditLogger:
             remote_endpoint=remote_endpoint,
             risk_score=decision.risk_score,
             risk_level=decision.risk_level,
-            reason_codes=list(decision.reasons),
+            reason_codes=[redact_string(reason) for reason in decision.reasons],
             decision=decision.decision,
             provenance=decision.provenance,
             enforcement_outcome=outcome,
-            approval_details=approval_details,
+            approval_details={
+                key: value
+                for key, value in (approval_details or {}).items()
+                if key not in {"single_use_token", "approval_token"}
+            } or None,
             metadata={
                 "pid": request.process_id,
                 "parent_pid": request.parent_pid,
