@@ -579,6 +579,9 @@ class NetworkMonitor:
         )
         return event
 
+    # Alias for evaluating connection findings against security rules
+    evaluate_connection = detect_anomalies
+
     def check_connections(
         self,
         processes: Optional[Dict[int, Dict[str, Any]]] = None,

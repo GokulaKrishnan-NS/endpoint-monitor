@@ -259,6 +259,29 @@
       "query_timeout_seconds": 10.0,
       "dedup_tolerance_seconds": 5.0,
       "require_command_line": false
+    },
+    "sysmon_telemetry": {
+      "enabled": true,
+      "channel": "Microsoft-Windows-Sysmon/Operational",
+      "enable_process_events": true,
+      "enable_network_events": true,
+      "max_events_per_query": 200,
+      "query_timeout_seconds": 10.0,
+      "dedup_tolerance_seconds": 5.0
+    },
+    "firewall_enforcement": {
+      "enabled": true,
+      "dry_run": false,
+      "auto_block_suspicious": true,
+      "block_threshold": 7,
+      "blocked_severities": [
+        "HIGH"
+      ],
+      "blocked_indicators": [],
+      "allowed_executables": [],
+      "rule_prefix": "EndpointMonitor_Block_",
+      "rule_group": "Endpoint Monitor Enforcement",
+      "timeout_seconds": 10.0
     }
   }
 }

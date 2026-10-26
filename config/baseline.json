@@ -1,8 +1,8 @@
 {
-  "total_observed_events": 6238,
+  "total_observed_events": 7791,
   "process_profiles": {
     "system idle process": {
-      "execution_count": 21,
+      "execution_count": 26,
       "known_parents": [
         "system idle process"
       ],
@@ -11,7 +11,7 @@
       ]
     },
     "system": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "system idle process"
       ],
@@ -20,40 +20,51 @@
       ]
     },
     "registry": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "system"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "svchost.exe": {
-      "execution_count": 2140,
+      "execution_count": 2612,
       "known_parents": [
         "services.exe"
       ],
       "known_users": [
-        "greenapple\\acer"
+        "greenapple\\acer",
+        "nt authority\\system",
+        "nt authority\\local service",
+        "nt authority\\network service"
       ]
     },
     "smss.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "system"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "csrss.exe": {
-      "execution_count": 46,
+      "execution_count": 56,
       "known_parents": [],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "wininit.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "antigravity ide.exe": {
-      "execution_count": 90,
+      "execution_count": 155,
       "known_parents": [
         "antigravity ide.exe",
         "explorer.exe"
@@ -63,28 +74,34 @@
       ]
     },
     "services.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "wininit.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "lsaiso.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "wininit.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "lsass.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "wininit.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "chrome.exe": {
-      "execution_count": 252,
+      "execution_count": 303,
       "known_parents": [
         "chrome.exe",
         "explorer.exe"
@@ -94,22 +111,27 @@
       ]
     },
     "wudfhost.exe": {
-      "execution_count": 69,
+      "execution_count": 84,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\local service"
+      ]
     },
     "fontdrvhost.exe": {
-      "execution_count": 46,
+      "execution_count": 56,
       "known_parents": [
         "wininit.exe",
         "winlogon.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "font driver host\\umfd-0",
+        "font driver host\\umfd-34"
+      ]
     },
     "ipf_helper.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "ipf_uf.exe"
       ],
@@ -118,18 +140,20 @@
       ]
     },
     "explorer.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [],
       "known_users": [
         "greenapple\\acer"
       ]
     },
     "intelcphdcpsvc.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "scsecsvc.exe": {
       "execution_count": 2,
@@ -163,30 +187,35 @@
       ]
     },
     "memcompression": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "system"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "ctfmon.exe": {
-      "execution_count": 23,
+      "execution_count": 29,
       "known_parents": [
         "svchost.exe"
       ],
       "known_users": [
-        "greenapple\\acer"
+        "greenapple\\acer",
+        "nt authority\\system"
       ]
     },
     "ctaudsvc.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "conhost.exe": {
-      "execution_count": 160,
+      "execution_count": 254,
       "known_parents": [
         "language_server.exe",
         "postgres.exe",
@@ -198,35 +227,44 @@
         "python.exe",
         "powershell.exe",
         "antigravity ide.exe",
-        "pyrefly.exe"
+        "pyrefly.exe",
+        "git.exe"
       ],
       "known_users": [
-        "greenapple\\acer"
+        "greenapple\\acer",
+        "nt authority\\network service",
+        "nt authority\\system"
       ]
     },
     "mpdefendercoreservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "smsvchost.exe": {
-      "execution_count": 46,
+      "execution_count": 56,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\local service"
+      ]
     },
     "spoolsv.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "cmediaaudioutility.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "explorer.exe"
       ],
@@ -242,11 +280,13 @@
       "known_users": []
     },
     "audiodg.exe": {
-      "execution_count": 13,
+      "execution_count": 18,
       "known_parents": [
         "svchost.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\local service"
+      ]
     },
     "opssvc.exe": {
       "execution_count": 2,
@@ -256,18 +296,22 @@
       "known_users": []
     },
     "dchuservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "creative.vadmonitorservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "bdssvc.exe": {
       "execution_count": 2,
@@ -298,46 +342,58 @@
       "known_users": []
     },
     "ipfsvc.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\local service"
+      ]
     },
     "googleplaygamesservices.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "intelaudioservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "ipf_uf.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "jhi_service.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "pg_ctl.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\network service"
+      ]
     },
     "quhlpsvc.exe": {
       "execution_count": 2,
@@ -354,13 +410,14 @@
       "known_users": []
     },
     "rtkauduservice64.exe": {
-      "execution_count": 45,
+      "execution_count": 55,
       "known_parents": [
         "services.exe",
         "explorer.exe"
       ],
       "known_users": [
-        "greenapple\\acer"
+        "greenapple\\acer",
+        "nt authority\\system"
       ]
     },
     "fcmcomm.exe": {
@@ -372,7 +429,7 @@
       "known_users": []
     },
     "lockapp.exe": {
-      "execution_count": 22,
+      "execution_count": 24,
       "known_parents": [
         "svchost.exe"
       ],
@@ -388,32 +445,40 @@
       "known_users": []
     },
     "msmpeng.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "wmiregistrationservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "xtuservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "wslservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "notion.exe": {
       "execution_count": 12,
@@ -426,7 +491,7 @@
       ]
     },
     "taskhostw.exe": {
-      "execution_count": 26,
+      "execution_count": 31,
       "known_parents": [
         "svchost.exe"
       ],
@@ -435,7 +500,7 @@
       ]
     },
     "systemsettings.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -444,29 +509,36 @@
       ]
     },
     "crashpad_handler.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "googleplaygamesservices.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "wmiprvse.exe": {
-      "execution_count": 61,
+      "execution_count": 73,
       "known_parents": [
         "svchost.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system",
+        "nt authority\\network service"
+      ]
     },
     "postgres.exe": {
-      "execution_count": 230,
+      "execution_count": 285,
       "known_parents": [
         "pg_ctl.exe",
         "postgres.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\network service"
+      ]
     },
     "fnkey.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "explorer.exe"
       ],
@@ -475,7 +547,7 @@
       ]
     },
     "msedgewebview2.exe": {
-      "execution_count": 241,
+      "execution_count": 326,
       "known_parents": [
         "msedgewebview2.exe",
         "linkedin.exe",
@@ -486,7 +558,7 @@
       ]
     },
     "crossdeviceservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -495,28 +567,34 @@
       ]
     },
     "intelgraphicssoftware.service.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "aggregatorhost.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "wlanext.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "textinputhost.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -525,7 +603,7 @@
       ]
     },
     "node.exe": {
-      "execution_count": 32,
+      "execution_count": 52,
       "known_parents": [
         "cmd.exe"
       ],
@@ -541,7 +619,7 @@
       "known_users": []
     },
     "cmd.exe": {
-      "execution_count": 32,
+      "execution_count": 52,
       "known_parents": [
         "language_server_windows_x64.exe",
         "node.exe"
@@ -551,7 +629,7 @@
       ]
     },
     "securityhealthsystray.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "explorer.exe"
       ],
@@ -560,7 +638,7 @@
       ]
     },
     "runtimebroker.exe": {
-      "execution_count": 117,
+      "execution_count": 143,
       "known_parents": [
         "svchost.exe"
       ],
@@ -569,7 +647,7 @@
       ]
     },
     "shellhost.exe": {
-      "execution_count": 26,
+      "execution_count": 31,
       "known_parents": [
         "sihost.exe"
       ],
@@ -578,14 +656,16 @@
       ]
     },
     "searchindexer.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "microsoftstartfeedprovider.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -594,7 +674,7 @@
       ]
     },
     "crossdeviceresume.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "sihost.exe"
       ],
@@ -603,11 +683,13 @@
       ]
     },
     "presentmonservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "intelgraphicssoftware.service.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "onlinent.exe": {
       "execution_count": 2,
@@ -617,7 +699,7 @@
       ]
     },
     "applicationframehost.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -636,7 +718,7 @@
       ]
     },
     "defendersessionhelper.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "msmpeng.exe"
       ],
@@ -645,7 +727,7 @@
       ]
     },
     "language_server_windows_x64.exe": {
-      "execution_count": 16,
+      "execution_count": 26,
       "known_parents": [
         "antigravity ide.exe"
       ],
@@ -654,7 +736,7 @@
       ]
     },
     "jsrtmon2.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -663,7 +745,7 @@
       ]
     },
     "widgetservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -672,21 +754,25 @@
       ]
     },
     "nissrv.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\local service"
+      ]
     },
     "securityhealthservice.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "python.exe": {
-      "execution_count": 51,
+      "execution_count": 57,
       "known_parents": [
         "python.exe",
         "powershell.exe",
@@ -697,14 +783,16 @@
       ]
     },
     "dwm.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "winlogon.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "window manager\\dwm-34"
+      ]
     },
     "linkedin.exe": {
-      "execution_count": 10,
+      "execution_count": 15,
       "known_parents": [
         "explorer.exe"
       ],
@@ -713,7 +801,7 @@
       ]
     },
     "startmenuexperiencehost.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -722,7 +810,7 @@
       ]
     },
     "widgetboard.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -731,7 +819,7 @@
       ]
     },
     "useroobebroker.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -740,19 +828,21 @@
       ]
     },
     "jusched.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [],
       "known_users": [
         "greenapple\\acer"
       ]
     },
     "winlogon.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "sihost.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -770,7 +860,7 @@
       ]
     },
     "shellexperiencehost.exe": {
-      "execution_count": 5,
+      "execution_count": 10,
       "known_parents": [
         "svchost.exe"
       ],
@@ -779,11 +869,13 @@
       ]
     },
     "officeclicktorun.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "monotificationux.exe": {
       "execution_count": 2,
@@ -793,7 +885,7 @@
       ]
     },
     "searchhost.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -802,14 +894,16 @@
       ]
     },
     "imemode.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "dchuservice.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "appactions.exe": {
-      "execution_count": 23,
+      "execution_count": 28,
       "known_parents": [
         "svchost.exe"
       ],
@@ -827,7 +921,7 @@
       ]
     },
     "dllhost.exe": {
-      "execution_count": 11,
+      "execution_count": 31,
       "known_parents": [
         "svchost.exe"
       ],
@@ -845,13 +939,15 @@
       ]
     },
     "powershell.exe": {
-      "execution_count": 89,
+      "execution_count": 123,
       "known_parents": [
         "language_server.exe",
         "code.exe",
         "powershell.exe",
         "opencode.exe",
-        "antigravity ide.exe"
+        "antigravity ide.exe",
+        "explorer.exe",
+        "language_server_windows_x64.exe"
       ],
       "known_users": [
         "greenapple\\acer"
@@ -887,7 +983,7 @@
       ]
     },
     "smartscreen.exe": {
-      "execution_count": 7,
+      "execution_count": 9,
       "known_parents": [
         "svchost.exe"
       ],
@@ -896,7 +992,7 @@
       ]
     },
     "system.exe": {
-      "execution_count": 31,
+      "execution_count": 33,
       "known_parents": [],
       "known_users": [
         "nt authority\\system"
@@ -910,21 +1006,25 @@
       "known_users": []
     },
     "vmcompute.exe": {
-      "execution_count": 21,
+      "execution_count": 26,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "mongod.exe": {
-      "execution_count": 21,
+      "execution_count": 26,
       "known_parents": [
         "services.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\network service"
+      ]
     },
     "msedge.exe": {
-      "execution_count": 166,
+      "execution_count": 206,
       "known_parents": [
         "msedge.exe",
         "explorer.exe"
@@ -934,11 +1034,13 @@
       ]
     },
     "intelgraphicssoftware.service.graphics.exe": {
-      "execution_count": 21,
+      "execution_count": 26,
       "known_parents": [
         "intelgraphicssoftware.service.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\system"
+      ]
     },
     "copilot-runtime.exe": {
       "execution_count": 17,
@@ -950,7 +1052,7 @@
       ]
     },
     "jucheck.exe": {
-      "execution_count": 21,
+      "execution_count": 26,
       "known_parents": [
         "jusched.exe"
       ],
@@ -959,7 +1061,7 @@
       ]
     },
     "searchprotocolhost.exe": {
-      "execution_count": 3,
+      "execution_count": 4,
       "known_parents": [
         "searchindexer.exe"
       ],
@@ -968,7 +1070,7 @@
       ]
     },
     "elevation_service.exe": {
-      "execution_count": 1,
+      "execution_count": 2,
       "known_parents": [
         "services.exe"
       ],
@@ -989,11 +1091,13 @@
       "known_users": []
     },
     "defenderaiplatformhost.exe": {
-      "execution_count": 15,
+      "execution_count": 20,
       "known_parents": [
         "msmpeng.exe"
       ],
-      "known_users": []
+      "known_users": [
+        "nt authority\\local service"
+      ]
     },
     "opencode.exe": {
       "execution_count": 8,
@@ -1063,58 +1167,71 @@
       ]
     },
     "pyrefly.exe": {
-      "execution_count": 2,
+      "execution_count": 5,
       "known_parents": [
         "antigravity ide.exe"
       ],
       "known_users": [
         "greenapple\\acer"
       ]
+    },
+    "sysmon64.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "services.exe"
+      ],
+      "known_users": [
+        "nt authority\\system"
+      ]
+    },
+    "unsecapp.exe": {
+      "execution_count": 4,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "nt authority\\system"
+      ]
+    },
+    "wevtutil.exe": {
+      "execution_count": 8,
+      "known_parents": [
+        "python.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "git.exe": {
+      "execution_count": 64,
+      "known_parents": [
+        "antigravity ide.exe",
+        "git.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "netsh.exe": {
+      "execution_count": 3,
+      "known_parents": [
+        "python.exe"
+      ],
+      "known_users": [
+        "greenapple\\acer"
+      ]
+    },
+    "consent.exe": {
+      "execution_count": 1,
+      "known_parents": [
+        "svchost.exe"
+      ],
+      "known_users": [
+        "nt authority\\system"
+      ]
     }
   },
   "cpu_samples": [
-    17.8,
-    15.7,
-    11.6,
-    9.1,
-    9.5,
-    10.5,
-    19.3,
-    16.6,
-    13.2,
-    9.4,
-    10.3,
-    11.0,
-    12.5,
-    9.9,
-    9.1,
-    10.6,
-    11.7,
-    9.4,
-    8.5,
-    10.2,
-    9.4,
-    10.4,
-    9.3,
-    9.3,
-    8.9,
-    9.2,
-    9.6,
-    12.4,
-    22.4,
-    19.3,
-    9.4,
-    10.6,
-    9.0,
-    11.9,
-    9.9,
-    9.2,
-    11.1,
-    9.4,
-    9.5,
-    8.7,
-    11.8,
-    12.3,
     9.8,
     10.2,
     12.7,
@@ -1172,51 +1289,51 @@
     0.0,
     24.6,
     29.9,
-    10.5
+    10.5,
+    32.2,
+    10.7,
+    8.4,
+    11.3,
+    17.9,
+    18.8,
+    18.7,
+    10.3,
+    7.9,
+    8.4,
+    14.3,
+    18.3,
+    18.1,
+    13.5,
+    8.0,
+    8.6,
+    8.9,
+    11.6,
+    10.3,
+    10.2,
+    7.7,
+    10.7,
+    2.9,
+    0.0,
+    7.8,
+    5.1,
+    1.7,
+    2.8,
+    6.2,
+    16.4,
+    13.3,
+    2.3,
+    22.1,
+    17.0,
+    13.2,
+    13.5,
+    11.2,
+    6.1,
+    5.2,
+    4.7,
+    5.1,
+    6.8
   ],
   "memory_samples": [
-    70.6,
-    70.8,
-    70.6,
-    70.7,
-    70.4,
-    70.4,
-    70.0,
-    70.0,
-    70.0,
-    70.0,
-    70.0,
-    69.9,
-    70.0,
-    70.0,
-    69.9,
-    69.8,
-    69.9,
-    69.9,
-    69.7,
-    69.7,
-    69.7,
-    69.7,
-    69.8,
-    69.7,
-    69.7,
-    69.9,
-    70.0,
-    70.1,
-    70.9,
-    71.5,
-    71.5,
-    71.5,
-    71.5,
-    71.3,
-    71.3,
-    71.3,
-    71.3,
-    71.3,
-    71.3,
-    71.3,
-    71.4,
-    70.7,
     70.7,
     70.7,
     70.6,
@@ -1274,6 +1391,48 @@
     74.2,
     74.3,
     74.4,
-    74.8
+    74.8,
+    53.9,
+    54.1,
+    53.8,
+    53.9,
+    54.4,
+    55.5,
+    55.8,
+    55.8,
+    55.4,
+    55.4,
+    55.3,
+    55.8,
+    55.9,
+    55.9,
+    55.5,
+    55.5,
+    55.4,
+    54.7,
+    54.8,
+    54.7,
+    54.7,
+    61.5,
+    63.9,
+    63.9,
+    64.0,
+    64.0,
+    64.3,
+    62.8,
+    62.8,
+    62.8,
+    62.9,
+    62.8,
+    56.5,
+    56.9,
+    56.6,
+    56.5,
+    56.2,
+    56.1,
+    56.1,
+    56.1,
+    56.1,
+    56.1
   ]
 }

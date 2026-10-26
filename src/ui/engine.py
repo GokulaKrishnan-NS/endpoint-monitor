@@ -55,6 +55,13 @@ from src.monitors.windows_process_telemetry import (
     ProcessTelemetryCorrelator,
     WindowsProcessTelemetryCollector,
 )
+from src.monitors.sysmon_telemetry import (
+    SysmonNetworkRecord,
+    SysmonProcessRecord,
+    SysmonTelemetryCollector,
+    SysmonTelemetryCorrelator,
+)
+from src.enforcement.windows_firewall import WindowsFirewallEnforcer
 
 
 logger = logging.getLogger("endpoint_monitor")
@@ -173,6 +180,17 @@ class MonitoringEngine:
         )
         self.process_telemetry_correlator = ProcessTelemetryCorrelator()
 
+        sysmon_cfg = self.config.get("sysmon_telemetry", {}) or {}
+        self.sysmon_telemetry_enabled = bool(sysmon_cfg.get("enabled", False))
+        self.sysmon_telemetry_collector = SysmonTelemetryCollector(
+            channel=sysmon_cfg.get("channel", "Microsoft-Windows-Sysmon/Operational"),
+            enable_process_events=sysmon_cfg.get("enable_process_events", True),
+            enable_network_events=sysmon_cfg.get("enable_network_events", True),
+            max_events_per_query=sysmon_cfg.get("max_events_per_query", 200),
+            query_timeout=sysmon_cfg.get("query_timeout_seconds", 10.0),
+        )
+        self.sysmon_telemetry_correlator = SysmonTelemetryCorrelator()
+
         # Process identity registry: shared by the polling monitor and the
         # Windows process-creation telemetry source so that the same process
         # instance is never reported twice.
@@ -180,6 +198,10 @@ class MonitoringEngine:
             tolerance=float(wpt_cfg.get("dedup_tolerance_seconds", 5.0) or 5.0),
             capacity=max(self.max_process_events_capacity, 1000),
         )
+
+        # Windows Defender Firewall Enforcement adapter
+        fw_cfg = self.config.get("firewall_enforcement", {}) or {}
+        self.firewall_enforcer = WindowsFirewallEnforcer(config=fw_cfg)
 
     # -------------------------------------------------------------------------
     # Lifecycle Management
@@ -282,14 +304,29 @@ class MonitoringEngine:
         except Exception as e:
             logger.debug(f"Error closing process telemetry collector: {e}")
 
+        # Release the Sysmon telemetry collector
+        try:
+            self.sysmon_telemetry_collector.close()
+        except Exception as e:
+            logger.debug(f"Error closing Sysmon telemetry collector: {e}")
+
         # Stop privileged security service
         try:
             self.security_service.stop()
         except Exception as e:
             logger.debug(f"Error stopping security service on engine shutdown: {e}")
 
+        # Cleanup firewall enforcement rules if active
+        try:
+            self.firewall_enforcer.cleanup()
+        except Exception as e:
+            logger.debug(f"Error cleaning up firewall enforcement rules on engine shutdown: {e}")
+
         logger.info("MonitoringEngine stopped cleanly.")
         return True
+
+    # Alias for stopping monitoring engine and closing resources
+    close = stop
 
     def pause(self) -> None:
         """Pause monitoring cycles without terminating worker threads."""
@@ -446,6 +483,13 @@ class MonitoringEngine:
                     self._ingest_event(net_event)
                     with self._lock:
                         self._network_events.append(net_event)
+                    try:
+                        self.firewall_enforcer.process_network_event(
+                            net_event,
+                            running_processes=current_processes,
+                        )
+                    except Exception as fe_err:
+                        self._record_error(f"Firewall enforcement error: {fe_err}")
             else:
                 with self._lock:
                     self._network_snapshot = []
@@ -496,6 +540,13 @@ class MonitoringEngine:
                 self._collect_process_telemetry(current_processes, process_tree)
             except Exception as e:
                 self._record_error(f"Windows process creation telemetry check failed: {e}")
+
+        # 7. Sysmon Telemetry (if enabled)
+        if self.sysmon_telemetry_enabled and not self._stop_event.is_set():
+            try:
+                self._collect_sysmon_telemetry(current_processes, process_tree)
+            except Exception as e:
+                self._record_error(f"Sysmon telemetry check failed: {e}")
 
     def _collect_process_telemetry(
         self,
@@ -560,6 +611,79 @@ class MonitoringEngine:
 
             self._ingest_event(event)
             self.process_identities.register(pid, create_time, source="telemetry")
+
+    def _collect_sysmon_telemetry(
+        self,
+        current_processes: Dict[int, Dict[str, Any]],
+        process_tree: Optional[ProcessTree],
+    ) -> None:
+        """Collect Sysmon process and network records."""
+        records = self.sysmon_telemetry_collector.query_live_events()
+        if not records:
+            return
+
+        for record in records:
+            if isinstance(record, SysmonProcessRecord) or getattr(record, "event_id", 0) == 1:
+                pid = record.pid
+                create_time = record.timestamp
+                guid = getattr(record, "process_guid", None)
+
+                if self.process_identities.matches(pid, create_time, process_guid=guid):
+                    existing = self.get_process_events_snapshot().get(pid) if pid is not None else None
+                    if existing is not None:
+                        existing.metadata.setdefault("sysmon_confirmed", True)
+                        existing.metadata.setdefault("sysmon_record_id", record.record_id)
+                        if guid:
+                            existing.metadata.setdefault("process_guid", guid)
+                        if record.hashes:
+                            existing.metadata.setdefault("hashes", dict(record.hashes))
+                    continue
+
+                process_info = self.sysmon_telemetry_correlator.to_process_info(
+                    record, running_processes=current_processes
+                )
+                event = self._evaluate_process_event(process_info, current_processes, process_tree)
+                event.source = "sysmon"
+                event.metadata["telemetry_source"] = "sysmon"
+                event.metadata["sysmon"] = {
+                    "channel": record.channel,
+                    "event_id": record.event_id,
+                    "record_id": record.record_id,
+                    "process_guid": record.process_guid,
+                    "parent_process_guid": record.parent_process_guid,
+                    "hashes": dict(record.hashes),
+                    "integrity_level": record.integrity_level,
+                    "rule_name": record.rule_name,
+                    "fields_available": list(record.fields_available),
+                }
+
+                self._ingest_event(event)
+                self.process_identities.register(pid, create_time, source="sysmon", process_guid=guid)
+
+            elif isinstance(record, SysmonNetworkRecord) or getattr(record, "event_id", 0) == 3:
+                conn = record.to_network_connection()
+                findings = self.network_monitor.evaluate_connection(
+                    conn,
+                    process_info=current_processes.get(record.pid),
+                    process_tree=process_tree,
+                )
+                net_event = self.sysmon_telemetry_correlator.to_network_event(
+                    record,
+                    findings=findings,
+                    network_monitor=self.network_monitor,
+                    process_tree=process_tree,
+                )
+                self._ingest_event(net_event)
+                with self._lock:
+                    self._network_events.append(net_event)
+                if findings.get("is_suspicious") and self.network_monitor.tracker.should_alert(conn):
+                    try:
+                        self.firewall_enforcer.process_network_event(
+                            net_event,
+                            running_processes=current_processes,
+                        )
+                    except Exception as fe_err:
+                        self._record_error(f"Sysmon firewall enforcement error: {fe_err}")
 
     def _prune_process_events(self, current_processes: Dict[int, Dict[str, Any]]) -> None:
         """
@@ -1106,6 +1230,23 @@ class MonitoringEngine:
             snapshot["dropped_notifications"] = self._dropped_notifications
             snapshot["tracked_process_identities"] = len(self.process_identities)
         return snapshot
+
+    def get_sysmon_telemetry_status(self) -> Dict[str, Any]:
+        """Return the diagnostic status of the Sysmon telemetry source."""
+        snapshot = self.sysmon_telemetry_collector.get_status_snapshot()
+        snapshot["configured"] = bool(self.sysmon_telemetry_enabled)
+        snapshot["enabled"] = bool(self.sysmon_telemetry_enabled)
+        if not self.sysmon_telemetry_enabled:
+            snapshot["status"] = "DISABLED"
+            snapshot["unavailable_reason"] = None
+        with self._lock:
+            snapshot["dropped_notifications"] = self._dropped_notifications
+            snapshot["tracked_process_identities"] = len(self.process_identities)
+        return snapshot
+
+    def get_firewall_enforcement_status(self) -> Dict[str, Any]:
+        """Return the diagnostic status and active rules of Windows Firewall enforcement."""
+        return self.firewall_enforcer.get_status_snapshot()
 
 
 class _EngineFileEventHandler(FileMonitor):

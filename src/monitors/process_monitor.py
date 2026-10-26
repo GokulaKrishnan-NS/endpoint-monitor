@@ -1,6 +1,6 @@
 import threading
 from collections import OrderedDict
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import psutil
 
@@ -195,9 +195,16 @@ class ProcessIdentityRegistry:
         self.tolerance = max(0.0, float(tolerance))
         self.capacity = max(1, int(capacity))
         self._entries: "OrderedDict[int, Tuple[Optional[float], str]]" = OrderedDict()
+        self._guid_to_pid: Dict[str, int] = {}
         self._lock = threading.Lock()
 
-    def register(self, pid, create_time, source: str = "polling") -> None:
+    def register(
+        self,
+        pid,
+        create_time,
+        source: str = "polling",
+        process_guid: Optional[str] = None,
+    ) -> None:
         """Record a process instance as already observed."""
         if pid is None:
             return
@@ -215,16 +222,30 @@ class ProcessIdentityRegistry:
         with self._lock:
             self._entries[pid] = (create_time, source)
             self._entries.move_to_end(pid)
-            while len(self._entries) > self.capacity:
-                self._entries.popitem(last=False)
+            if process_guid:
+                norm_guid = str(process_guid).strip().lower()
+                self._guid_to_pid[norm_guid] = pid
 
-    def matches(self, pid, create_time) -> bool:
+            while len(self._entries) > self.capacity:
+                evicted_pid, _ = self._entries.popitem(last=False)
+                # Prune evicted pid from guid map
+                stale_guids = [g for g, p in self._guid_to_pid.items() if p == evicted_pid]
+                for g in stale_guids:
+                    del self._guid_to_pid[g]
+
+    def matches(self, pid, create_time, process_guid: Optional[str] = None) -> bool:
         """
-        Return True when the given PID/creation-time pair was already observed.
+        Return True when the given PID/creation-time or GUID was already observed.
 
         When either timestamp is unknown the entry is treated as a match to
         remain conservative and avoid duplicate security events.
         """
+        if process_guid:
+            norm_guid = str(process_guid).strip().lower()
+            with self._lock:
+                if norm_guid in self._guid_to_pid:
+                    return True
+
         if pid is None:
             return False
         try:
@@ -248,9 +269,9 @@ class ProcessIdentityRegistry:
         except (TypeError, ValueError):
             return True
 
-    def is_new(self, pid, create_time) -> bool:
+    def is_new(self, pid, create_time, process_guid: Optional[str] = None) -> bool:
         """Inverse of :meth:`matches`."""
-        return not self.matches(pid, create_time)
+        return not self.matches(pid, create_time, process_guid=process_guid)
 
     def get_source(self, pid) -> Optional[str]:
         """Return the collection source that first reported this PID."""
@@ -268,6 +289,7 @@ class ProcessIdentityRegistry:
         """Forget every recorded identity."""
         with self._lock:
             self._entries.clear()
+            self._guid_to_pid.clear()
 
     def __len__(self) -> int:
         with self._lock:
