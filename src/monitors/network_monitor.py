@@ -9,6 +9,7 @@ and supports continuous monitoring with duplicate alert suppression.
 """
 
 import json
+import ipaddress
 import logging
 import os
 import socket
@@ -71,29 +72,24 @@ def is_loopback_or_local(ip: Optional[str]) -> bool:
     """Check if an IP address is localhost, loopback, or unspecified."""
     if not ip:
         return True
-    ip = ip.strip().lower()
-    return (
-        ip in ("127.0.0.1", "localhost", "::1", "0.0.0.0", "::")
-        or ip.startswith("127.")
-    )
+    normalized = ip.strip().lower()
+    if normalized == "localhost":
+        return True
+    try:
+        address = ipaddress.ip_address(normalized)
+        return address.is_loopback or address.is_unspecified
+    except ValueError:
+        return False
 
 
 def is_private_ip(ip: Optional[str]) -> bool:
     """Check if an IP address falls within RFC 1918 private ranges."""
     if not ip:
         return False
-    if is_loopback_or_local(ip):
-        return True
-    if ip.startswith("10.") or ip.startswith("192.168."):
-        return True
-    if ip.startswith("172."):
-        try:
-            parts = ip.split(".")
-            second_octet = int(parts[1])
-            return 16 <= second_octet <= 31
-        except (IndexError, ValueError):
-            pass
-    return False
+    try:
+        return ipaddress.ip_address(ip.strip()).is_private
+    except ValueError:
+        return False
 
 
 class NetworkConnection:
@@ -112,6 +108,7 @@ class NetworkConnection:
         status: str = "NONE",
         process_name: Optional[str] = None,
         parent_process_name: Optional[str] = None,
+        process_create_time: Optional[float] = None,
         timestamp: Optional[float] = None,
     ):
         self.pid: Optional[int] = pid
@@ -123,6 +120,7 @@ class NetworkConnection:
         self.status: str = status
         self.process_name: Optional[str] = process_name
         self.parent_process_name: Optional[str] = parent_process_name
+        self.process_create_time = process_create_time
         self.timestamp: float = timestamp or time.time()
 
         # Outbound if remote address exists and is not listening/loopback
@@ -142,6 +140,7 @@ class NetworkConnection:
             self.local_port,
             self.remote_ip,
             self.remote_port,
+            self.process_create_time,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -150,6 +149,7 @@ class NetworkConnection:
             "pid": self.pid,
             "process_name": self.process_name,
             "parent_process_name": self.parent_process_name,
+            "process_create_time": self.process_create_time,
             "protocol": self.protocol,
             "local_ip": self.local_ip,
             "local_port": self.local_port,
@@ -309,6 +309,10 @@ class NetworkMonitor:
         self.state_tracker = NetworkStateTracker()
         self._stop_event = threading.Event()
         self._bg_thread: Optional[threading.Thread] = None
+        self._last_success_timestamp: Optional[float] = None
+        self._last_error: Optional[str] = None
+        self._collection_status = "DISABLED" if not self.enabled else "NOT_YET_COLLECTED"
+        self._last_active_connections: List[NetworkConnection] = []
 
     def get_active_connections(
         self, processes: Optional[Dict[int, Dict[str, Any]]] = None
@@ -322,9 +326,16 @@ class NetworkMonitor:
 
         try:
             raw_conns = psutil.net_connections(kind="inet")
-        except (psutil.AccessDenied, psutil.Error, OSError) as e:
+        except (psutil.AccessDenied, psutil.Error, OSError, NotImplementedError, AttributeError) as e:
             self.logger.debug(f"Unable to query network connections: {e}")
+            self._last_error = f"{type(e).__name__}: {e}"
+            self._collection_status = (
+                "ACCESS_DENIED" if isinstance(e, psutil.AccessDenied) else "UNAVAILABLE"
+            )
             return connections
+        self._collection_status = "AVAILABLE"
+        self._last_success_timestamp = time.time()
+        self._last_error = None
 
         for sconn in raw_conns:
             try:
@@ -352,16 +363,19 @@ class NetworkMonitor:
                 # Process association
                 process_name: Optional[str] = None
                 parent_process_name: Optional[str] = None
+                process_create_time: Optional[float] = None
 
                 if pid is not None:
                     if processes and pid in processes:
                         pinfo = processes[pid]
                         process_name = pinfo.get("name")
                         parent_process_name = pinfo.get("parent_name")
+                        process_create_time = pinfo.get("create_time")
                     else:
                         try:
                             proc = psutil.Process(pid)
                             process_name = proc.name()
+                            process_create_time = proc.create_time()
                             try:
                                 parent = proc.parent()
                                 if parent:
@@ -389,6 +403,7 @@ class NetworkMonitor:
                     status=status,
                     process_name=process_name,
                     parent_process_name=parent_process_name,
+                    process_create_time=process_create_time,
                 )
                 connections.append(conn)
 
@@ -564,6 +579,9 @@ class NetworkMonitor:
         )
         return event
 
+    # Alias for evaluating connection findings against security rules
+    evaluate_connection = detect_anomalies
+
     def check_connections(
         self,
         processes: Optional[Dict[int, Dict[str, Any]]] = None,
@@ -575,7 +593,38 @@ class NetworkMonitor:
         If new_only is True, filters to only newly established connections and
         suppresses duplicate alerts for already-seen active connections.
         """
+        if not self.enabled:
+            self._collection_status = "DISABLED"
+            return {
+                "total_connections": 0,
+                "outbound_connections": 0,
+                "evaluated_connections": 0,
+                "active_connections": [],
+                "events": [],
+                "suspicious_events": [],
+                "collection_status": self._collection_status,
+                "last_success_timestamp": self._last_success_timestamp,
+                "last_error": self._last_error,
+            }
+
         all_conns = self.get_active_connections(processes=processes)
+        if self._collection_status in ("ACCESS_DENIED", "UNAVAILABLE"):
+            return {
+                "total_connections": len(self._last_active_connections),
+                "outbound_connections": sum(
+                    1 for conn in self._last_active_connections if conn.is_outbound
+                ),
+                "evaluated_connections": 0,
+                "active_connections": [
+                    conn.to_dict() for conn in self._last_active_connections
+                ],
+                "events": [],
+                "suspicious_events": [],
+                "collection_status": self._collection_status,
+                "last_success_timestamp": self._last_success_timestamp,
+                "last_error": self._last_error,
+            }
+        self._last_active_connections = list(all_conns)
         new_conns, active_conns = self.state_tracker.update(all_conns)
 
         target_conns = new_conns if new_only else active_conns
@@ -603,8 +652,12 @@ class NetworkMonitor:
             "total_connections": len(all_conns),
             "outbound_connections": outbound_count,
             "evaluated_connections": len(target_conns),
+            "active_connections": [conn.to_dict() for conn in all_conns],
             "events": events,
             "suspicious_events": suspicious_events,
+            "collection_status": self._collection_status,
+            "last_success_timestamp": self._last_success_timestamp,
+            "last_error": self._last_error,
         }
 
     def start_monitoring(self, stop_event: Optional[threading.Event] = None) -> None:

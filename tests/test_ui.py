@@ -299,7 +299,10 @@ class TestDashboardAppInit(unittest.TestCase):
             self.skipTest("GUI display environment not available (headless mode).")
 
         import tkinter as tk
-        root = tk.Tk()
+        try:
+            root = tk.Tk()
+        except Exception as e:
+            self.skipTest(f"Tk environment unavailable: {e}")
         root.withdraw()  # Keep window hidden during test
         try:
             engine = MonitoringEngine()
@@ -311,6 +314,74 @@ class TestDashboardAppInit(unittest.TestCase):
 
             # Test safe view update
             app._update_all_views()
+            app.on_close()
+        except Exception as e:
+            root.destroy()
+            raise e
+
+    def test_overview_view_shows_process_count(self):
+        """Overview tab must show accurate process counts from engine snapshot."""
+        if not is_gui_available():
+            self.skipTest("GUI display environment not available.")
+
+        import tkinter as tk
+        try:
+            root = tk.Tk()
+        except Exception as e:
+            self.skipTest(f"Tk environment unavailable: {e}")
+        root.withdraw()
+        try:
+            engine = MonitoringEngine()
+            # Populate mock processes
+            mock_procs = {
+                1001: {"pid": 1001, "name": "service.exe", "ppid": 1, "username": "SYSTEM", "create_time": 100.0},
+                1002: {"pid": 1002, "name": "app.exe", "ppid": 1001, "username": "user", "create_time": 105.0},
+            }
+            with engine._lock:
+                engine._processes = mock_procs
+            app = SecurityDashboardApp(engine=engine, root=root, auto_start=False)
+            app._update_all_views()
+
+            self.assertEqual(app.lbl_card_procs.cget("text"), "2")
+            self.assertIn("Observed PIDs: 2", app.status_text_var.get())
+            app.on_close()
+        except Exception as e:
+            root.destroy()
+            raise e
+
+    def test_tab_switch_populates_process_tree(self):
+        """Switching to Process Explorer tab must immediately populate table from engine snapshot."""
+        if not is_gui_available():
+            self.skipTest("GUI display environment not available.")
+
+        import tkinter as tk
+        try:
+            root = tk.Tk()
+        except Exception as e:
+            self.skipTest(f"Tk environment unavailable: {e}")
+        root.withdraw()
+        try:
+            engine = MonitoringEngine()
+            mock_procs = {
+                1001: {"pid": 1001, "name": "explorer.exe", "ppid": 1, "username": "user", "create_time": 100.0},
+                1002: {"pid": 1002, "name": "cmd.exe", "ppid": 1001, "username": "user", "create_time": 105.0},
+            }
+            with engine._lock:
+                engine._processes = mock_procs
+            app = SecurityDashboardApp(engine=engine, root=root, auto_start=False)
+
+            # Initially on Overview tab, process tree has 0 rows
+            initial_rows = len(app.tree_processes.get_children())
+            self.assertEqual(initial_rows, 0)
+
+            # Switch tab to Process Explorer
+            app.notebook.select(app.tab_processes)
+            app.notebook.event_generate("<<NotebookTabChanged>>")
+            root.update_idletasks()
+
+            # Now process tree must be populated
+            updated_rows = len(app.tree_processes.get_children())
+            self.assertEqual(updated_rows, 2)
             app.on_close()
         except Exception as e:
             root.destroy()

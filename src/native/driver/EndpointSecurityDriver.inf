@@ -1,0 +1,43 @@
+;
+; EndpointSecurityDriver.inf
+; Windows Native Kernel Driver Installation Script
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = Security
+ClassGuid   = {b6170668-953e-4402-b26a-939922097e3a}
+Provider    = %ManufacturerName%
+DriverVer   = 10/22/2026,2.0.0.1
+CatalogFile = EndpointSecurityDriver.cat
+
+[DestinationDirs]
+DefaultDestDir = 12 ; %windir%\system32\drivers
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+EndpointSecurityDriver.sys = 1,,
+
+[DefaultInstall.NTamd64]
+CopyFiles = Drivers_Dir
+
+[Drivers_Dir]
+EndpointSecurityDriver.sys
+
+[DefaultInstall.NTamd64.Services]
+AddService = EndpointSecurityDriver, %SPSVCINST_ASSOCSERVICE%, Driver_Service_Inst
+
+[Driver_Service_Inst]
+DisplayName    = %ServiceDisplayName%
+ServiceType    = 1 ; SERVICE_KERNEL_DRIVER
+StartType      = 3 ; SERVICE_DEMAND_START
+ErrorControl   = 1 ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\EndpointSecurityDriver.sys
+
+[Strings]
+SPSVCINST_ASSOCSERVICE = 0x00000002
+ManufacturerName       = "Endpoint Security Monitor"
+DiskName               = "Endpoint Security Driver Installation Disk"
+ServiceDisplayName     = "Endpoint Security Process and Network Filter Driver"
